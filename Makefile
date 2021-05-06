@@ -1,5 +1,5 @@
 all: clean
-	gcc read.c mmio.c -o read
+	gcc read_example.c mmio.c -o read.out
 
 clean: 
-	rm -f read
+	rm -f *.out
