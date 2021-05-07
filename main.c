@@ -38,17 +38,19 @@ int main(){
 
     //read matrices
     int * Li, *Lp;
-    double * Lx, *b;
+    double * Lx, *b1, *b2;
     read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx", &Li, &Lp, &Lx);
-    read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &b);
+    read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &b1);
     //get dimension
     int dim = get_dim("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
 
     struct timespec time_start, time_finish;
     clock_gettime(CLOCK_MONOTONIC, &time_start);
-    lsolve(dim, Lp, Li, Lx, b);
+    lsolve(dim, Lp, Li, Lx, b1);
     clock_gettime(CLOCK_MONOTONIC, &time_finish);
     struct timespec time_diff = difftimespec(time_finish, time_start);
     double time_msec = timespec_to_msec(time_diff);
     printf("The time is %f\n", time_msec);
+
+
 }
