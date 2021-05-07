@@ -54,7 +54,7 @@ int lsolve_improve_1(int n, int *Lp, int *Li, double *Lx, double *x)
 }
 
 
-int lsolve_BFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
+int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     int p, j;
     if (!Lp || !Li || !x)
@@ -88,8 +88,8 @@ int lsolve_BFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
         visited[cur_element] = 1;
         //push all the node's non-visited children to the stack
         for (int i=Lp[cur_element]; i<Lp[cur_element +1]; i++){
-            if (visited[i] == 0){                       
-                stack[stack_size] = i;
+            if (visited[Li[i]] == 0){                       
+                stack[stack_size] = Li[i];
                 stack_size++;
             }
         }
@@ -132,21 +132,21 @@ int validation(double *solution, double * answer, int size){
 }
 
 
-int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix m,char * b_dir, double * solution, double* time){
+int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m,char * b_dir, double * solution, double* time){
     //read matrices
     double *b;
     read_b(b_dir, &b);
     //get dimension
     struct timespec time_start, time_finish;
     clock_gettime(CLOCK_MONOTONIC, &time_start);
-    (*solver_pt)(m.dim, m.Lp, m.Li, m.Lx, b);
+    (*solver_pt)(m->dim, m->Lp, m->Li, m->Lx, b);
     clock_gettime(CLOCK_MONOTONIC, &time_finish);
 
     struct timespec time_diff = difftimespec(time_finish, time_start);
     * time = timespec_to_msec(time_diff);
 
     int validate_result;
-    validate_result = validation(solution, b, m.dim);
+    validate_result = validation(solution, b, m->dim);
     free(b);
     return validate_result;
 }
@@ -154,18 +154,13 @@ int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix m,char 
 
 
 int main(){
-    int * Li, *Lp;
-    double * Lx, *solution;
-    read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx", &Li, &Lp, &Lx);
+    double *solution;
+    Matrix * m1;
+    m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
     read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution);
     //get dimension
     int dim = get_dim("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    Matrix m1;
-    m1.Li = Li;
-    m1.Lp = Lp;
-    m1.Lx = Lx;
-    m1.dim = dim;
-    lsolve(m1.dim, m1.Lp, m1.Li, m1.Lx, solution);
+    lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
     double t1, t2, t3;
     int return_1, return_2, return_3;
     return_1 = get_time(&lsolve, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t1);
@@ -173,6 +168,6 @@ int main(){
     return_2 = get_time(&lsolve_improve_1, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t2);
     printf("the time takes for 1 is %f, validate result %d\n", t2, return_2);
 
-    return_3 = get_time(&lsolve_improve_1, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t3);
+    return_3 = get_time(&lsolve_DFS_traversal, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t3);
     printf("the time takes for 1 is %f, validate result %d\n", t3, return_3);
 }

@@ -3,8 +3,14 @@
 #include <string.h>
 
 #include "mmio.h"
-void read_matrix(char *dir, int **Li, int **Lp, double **Lx)
+#include "read.h"
+Matrix *read_matrix(char *dir)
 {
+
+    int *Li, *Lp;
+    double *Lx;
+    Matrix *mtx = malloc(sizeof(Matrix));
+
     MM_typecode matcode;
     FILE *f;
     f = fopen(dir, "r");
@@ -18,29 +24,33 @@ void read_matrix(char *dir, int **Li, int **Lp, double **Lx)
     int M, N, nz;
     mm_read_mtx_crd_size(f, &M, &N, &nz);
     //Li is the row index
-    *Li = (int *)malloc(nz * sizeof(int));
+    Li = (int *)malloc(nz * sizeof(int));
     //Lp is the column pointer
-    *Lp = (int *)malloc((N + 1) * sizeof(int));
-    *Lx = (double *)malloc(nz * sizeof(double));
+    Lp = (int *)malloc((N + 1) * sizeof(int));
+    Lx = (double *)malloc(nz * sizeof(double));
     int cur_col;
     int row, col;
     double val;
     for (int i = 0; i < nz; i++)
     {
 
-        // fscanf(f, "%d %d %lg\n", &((*Li)[i]), &((*Lp)[i]), &((*Lx)[i]));
         fscanf(f, "%d %d %lg\n", &row, &col, &val);
         row--;
         col--;
         if (cur_col != col)
         {
             cur_col = col;
-            (*Lp)[cur_col] = i;
+            (Lp)[cur_col] = i;
         }
-        (*Li)[i] = row;
-        (*Lx)[i] = val;
+        (Li)[i] = row;
+        (Lx)[i] = val;
     }
-    (*Lp)[N] = nz;
+    (Lp)[N] = nz;
+    mtx->dim = M;
+    mtx->Li = Li;
+    mtx->Lp = Lp;
+    mtx->Lx = Lx;
+    return mtx;
 }
 
 int get_dim(char *dir)
