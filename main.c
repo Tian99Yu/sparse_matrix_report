@@ -134,7 +134,7 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
     {
         j=non_zeros[i];
         x[j] /= Lx[Lp[j]];
-        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
+        for (p = Lp[j] + 1; p<Lp[j+1] ; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
         }
@@ -168,7 +168,7 @@ int verification(Matrix * mtx, double* b, double* answer){
     nz = mtx->nz;
     dim = mtx->dim;
     double result[dim];
-    memset(result, 0, sizeof(int) * dim);
+    memset(result, 0, sizeof(double) * dim);
     for (int i=0;i<dim; i++){
         if (answer[i] > 100000) printf("blow value, %f", answer[i]);
     }
@@ -186,7 +186,8 @@ int verification(Matrix * mtx, double* b, double* answer){
         }
     } 
     for (int i=0; i<dim;i++){
-        if (abs(b[i] - result[i]) > 0.0001 && abs(b[i] - result[i]) < 10000000 ){
+        if (abs(b[i] - result[i]) > 0.0001){
+            printf("b: %f, result: %f, iteration %d\n", b[i], result[i], i);
             return 0;
         }
     }
@@ -215,6 +216,24 @@ int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m, dou
 
 
 int main(){
+
+    // double *solution1, *solution2, *solution3,* verification_b;
+    // Matrix * m1, *debug_m;
+    // double t1, t2, t3;
+    // m1 = read_matrix("matrices/debug_2/matrix.mtx");
+    // read_b("matrices/debug_2/b.mtx", &solution1);
+    // // lsolve_DFS_traversal(m1->dim, m1->Lp, m1->Li, m1->Lx, solution1);
+
+    // read_b("matrices/debug_2/b.mtx", &verification_b);
+    // int r3 = get_time(&lsolve_DFS_traversal, m1, solution1, &t3, verification_b);
+    // for (int i=0; i<9; i++){
+    //     printf("%f\n", solution1[i]);
+
+    // }
+    // printf("time %f, verification %d\n", t3, r3);
+
+
+    //==================================================
     double *solution1, *solution2, *solution3,* verification_b;
     Matrix * m1, *debug_m;
     double t1, t2, t3;
@@ -226,7 +245,7 @@ int main(){
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
     int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
-    int r3 = get_time(&lsolve_improve_1, m1, solution3, &t3, verification_b);
+    int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     printf("time %f, verification %d\n", t1, r1);
     printf("time %f, verification %d\n", t2, r2);
     printf("time %f, verification %d\n", t3, r3);
