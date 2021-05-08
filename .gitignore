@@ -1,4 +1,5 @@
 *.gz
 .vscode
 *.out
+./callgrind.out.*
 /matrices

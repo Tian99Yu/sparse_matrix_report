@@ -42,9 +42,9 @@ int lsolve_improve_1(int n, int *Lp, int *Li, double *Lx, double *x)
     /* check inputs */
     for (j = 0; j < n; j++)
     {
-        x[j] /= Lx[Lp[j]];
         //check if x[j] is 0 to save time
         if (x[j]==0){continue;}
+        x[j] /= Lx[Lp[j]];
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
@@ -52,6 +52,35 @@ int lsolve_improve_1(int n, int *Lp, int *Li, double *Lx, double *x)
     }
     return (1);
 }
+
+
+int lsolve_improve_2(int n, int *Lp, int *Li, double *Lx, double *x)
+{
+    int p, j;
+    double x_tmp;
+    if (!Lp || !Li || !x)
+        return (0);
+    /* check inputs */
+    for (j = 0; j < n; j++)
+    {
+        //check if x[j] is 0 to save time
+        if (x[j]==0){continue;}
+        x[j] /= Lx[Lp[j]];
+        x_tmp = x[j];
+        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
+        {
+            if (j == Li[p]) {x_tmp -= Lx[p] * x_tmp; }else{
+            x[Li[p]] -= Lx[p] * x_tmp;}
+            // if (x_tmp != x[j]){
+            //     printf("caonima%f %f", x_tmp, x[j]);
+            //     exit(1);
+            // }
+        }
+        x[j] = x_tmp;
+    }
+    return (1);
+}
+
 
 
 int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
@@ -95,9 +124,8 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
         }
     }
 
+//TODO: sorting is required, it is already too slow since there are too many memory access
 
-
-    // for (j = 0; j < n; j++)
     for(int i=0; i<non_zeros_size; i++)
     {
         j=non_zeros[i];
@@ -155,19 +183,30 @@ int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m,char
 
 int main(){
     double *solution;
-    Matrix * m1;
-    m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution);
+    Matrix * m1, *debug_m;
+    // m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
+    m1 = read_matrix("matrices/trivial_eg/matrix.mtx");
+    read_b("./matrices/trivial_eg/b.mtx", &solution);
+    lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
+    // read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution);
     //get dimension
     int dim = get_dim("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
+    // lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
     lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
+    for (int i=0; i<2; i++){
+        printf("%f\n", solution[i]);
+    }
+    exit(0);
+
+
+
     double t1, t2, t3;
     int return_1, return_2, return_3;
-    return_1 = get_time(&lsolve, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t1);
-    printf("the time takes for 1 is %f, validate result %d\n", t1, return_1);
+    // return_1 = get_time(&lsolve, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t1);
+    // printf("the time takes for 1 is %f, validate result %d\n", t1, return_1);
     return_2 = get_time(&lsolve_improve_1, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t2);
     printf("the time takes for 1 is %f, validate result %d\n", t2, return_2);
 
-    return_3 = get_time(&lsolve_DFS_traversal, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t3);
-    printf("the time takes for 1 is %f, validate result %d\n", t3, return_3);
+    // return_3 = get_time(&lsolve_improve_2, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t3);
+    // printf("the time takes for 1 is %f, validate result %d\n", t3, return_3);
 }

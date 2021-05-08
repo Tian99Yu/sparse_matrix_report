@@ -2,7 +2,7 @@ all: clean
 	gcc -g main.c read.c mmio.c -o main.out
 
 read:clean
-	gcc read.c mmio.c -o read.out
+	gcc -g read.c mmio.c -o read.out
 
 
 example:clean

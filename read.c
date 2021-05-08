@@ -23,33 +23,63 @@ Matrix *read_matrix(char *dir)
 
     int M, N, nz;
     mm_read_mtx_crd_size(f, &M, &N, &nz);
-    //Li is the row index
-    Li = (int *)malloc(nz * sizeof(int));
+    //Li is the row index, there is an extra M since I might need to add 1 to the diagonal
+    Li = (int *)malloc((nz + M) * sizeof(int));
     //Lp is the column pointer
     Lp = (int *)malloc((N + 1) * sizeof(int));
-    Lx = (double *)malloc(nz * sizeof(double));
+    memset(Lp, -1, sizeof(int) * (N+1));
+    Lx = (double *)malloc((nz + M) * sizeof(double));
     int cur_col;
-    int row, col;
+    cur_col = -1;
+    int row, col, total_nz;
     double val;
-    for (int i = 0; i < nz; i++)
-    {
-
+    total_nz = 0;
+    for(int i=0; i<nz;i++){
         fscanf(f, "%d %d %lg\n", &row, &col, &val);
         row--;
         col--;
-        if (cur_col != col)
-        {
-            cur_col = col;
-            (Lp)[cur_col] = i;
+        if (row <= col){continue;}
+        //if change to a new column
+        if (cur_col != col){
+            // case 1, no diagonal gap
+            if (cur_col + 1 == col){
+                //directly add a diagonal value
+                cur_col ++;
+                Lp[cur_col] = total_nz;
+                Li[total_nz] = col;
+                Lx[total_nz] = 1;
+                total_nz ++;
+            }else{
+                //case2 diagonal gap, then fill all col's diagonals
+                while(cur_col < col){
+                    cur_col++;
+                    Lp[cur_col] = total_nz;
+                    Li[total_nz] = cur_col;
+                    Lx[total_nz] = 1;
+                    total_nz ++;
+                }
+            }
         }
-        (Li)[i] = row;
-        (Lx)[i] = val;
+        Li[total_nz] = row;
+        Lx[total_nz] = val;
+        total_nz++;
     }
-    (Lp)[N] = nz;
+    //fill out the zero diagonals till the end
+    while(cur_col<M-1){
+        cur_col++;
+        Lp[cur_col] = total_nz;
+        Li[total_nz] = cur_col;
+        Lx[total_nz] = 1;
+        total_nz++;
+    }
+    Lp[cur_col+1] = total_nz+1;
+
+
     mtx->dim = M;
     mtx->Li = Li;
     mtx->Lp = Lp;
     mtx->Lx = Lx;
+    mtx->nz = total_nz;
     return mtx;
 }
 
@@ -96,17 +126,25 @@ void read_b(char *dir, double **b)
 
         // fscanf(f, "%d %d %lg\n", &((*Li)[i]), &((*Lp)[i]), &((*Lx)[i]));
         fscanf(f, "%d %d %lg\n", &row, &col, &val);
+        //only use the lower part of the matrix
         row--;
         col--;
         (*b)[row] = val;
     }
 }
 
-// int main()
-// {
-//     // int *Li, *Lp;
-//     // double *Lx;
-//     // read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx", &Li, &Lp, &Lx);
+int main()
+{
+    // int *Li, *Lp;
+    // double *Lx;
+    Matrix * m;
+    m = read_matrix("matrices/trivial_eg/matrix_bug.mtx");
+    for (int i=0; i<3; i++){
+        printf("%f\n", m->Lx[i]);
+    }
+    printf("caonima");
+//     int * Lp;
+//     Lp = m->Lp;
 //     // for (int i = 0; i < 5; i++)
 //     // {
 //     //     printf("line %d: row index %d, col pointer %d, val %f\n",i, Li[i], Lp[i], Lx[i]);
@@ -117,4 +155,4 @@ void read_b(char *dir, double **b)
 //     // double *b;
 //     // read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &b);
 //     // printf("random location %f, 169 pos %f, 1695 %f", b[4], b[168], b[1694]);
-// }
+}

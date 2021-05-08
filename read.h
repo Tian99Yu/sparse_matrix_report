@@ -5,7 +5,7 @@ typedef struct
 {
     int * Li, *Lp;
     double * Lx;
-    int dim;
+    int dim, nz;
 } Matrix;
 Matrix* read_matrix(char *dir);
 void read_b(char * dir, double** b);
