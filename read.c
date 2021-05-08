@@ -133,16 +133,16 @@ void read_b(char *dir, double **b)
     }
 }
 
-int main()
-{
-    // int *Li, *Lp;
-    // double *Lx;
-    Matrix * m;
-    m = read_matrix("matrices/trivial_eg/matrix_bug.mtx");
-    for (int i=0; i<3; i++){
-        printf("%f\n", m->Lx[i]);
-    }
-    printf("caonima");
+// int main()
+// {
+//     // int *Li, *Lp;
+//     // double *Lx;
+//     Matrix * m;
+//     m = read_matrix("matrices/trivial_eg/matrix_bug.mtx");
+//     for (int i=0; i<3; i++){
+//         printf("%f\n", m->Lx[i]);
+//     }
+//     printf("caonima");
 //     int * Lp;
 //     Lp = m->Lp;
 //     // for (int i = 0; i < 5; i++)
@@ -155,4 +155,4 @@ int main()
 //     // double *b;
 //     // read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &b);
 //     // printf("random location %f, 169 pos %f, 1695 %f", b[4], b[168], b[1694]);
-}
+// }

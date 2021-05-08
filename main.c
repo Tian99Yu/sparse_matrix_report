@@ -25,7 +25,11 @@ int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
     /* check inputs */
     for (j = 0; j < n; j++)
     {
+        if (Lx[Lp[j]] != 1){
+            printf("this diagonal value is wrong, val: %f, col %d, row %d", Lx[Lp[j]], j, Lp[j]);
+        }
         x[j] /= Lx[Lp[j]];
+
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
@@ -159,54 +163,73 @@ int validation(double *solution, double * answer, int size){
     return 0;
 }
 
+int verification(Matrix * mtx, double* b, double* answer){
+    int nz, dim;
+    nz = mtx->nz;
+    dim = mtx->dim;
+    double result[dim];
+    memset(result, 0, sizeof(int) * dim);
+    for (int i=0;i<dim; i++){
+        if (answer[i] > 100000) printf("blow value, %f", answer[i]);
+    }
+    for(int col=0;col<dim; col++){
+        for(int i=mtx->Lp[col]; i < mtx->Lp[col+1];i++){
+            int row;
+            double val;
+            row = mtx->Li[i];
+            val = mtx->Lx[i];
 
-int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m,char * b_dir, double * solution, double* time){
+        if (answer[col] > 100000) printf("blow answer, %f", answer[col]);
+        if (val > 100000) printf("blow value, %f", val);
+        if (answer[col] * val > 100000) printf("blow multiplication %f",val * answer[col] );
+            result[row] += answer[col] * val;
+        }
+    } 
+    for (int i=0; i<dim;i++){
+        if (abs(b[i] - result[i]) > 0.0001 && abs(b[i] - result[i]) < 10000000 ){
+            return 0;
+        }
+    }
+    return 1;
+
+}
+
+
+
+int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m, double * solution, double* time, double * verification_b){
     //read matrices
-    double *b;
-    read_b(b_dir, &b);
     //get dimension
     struct timespec time_start, time_finish;
     clock_gettime(CLOCK_MONOTONIC, &time_start);
-    (*solver_pt)(m->dim, m->Lp, m->Li, m->Lx, b);
+    (*solver_pt)(m->dim, m->Lp, m->Li, m->Lx, solution);
     clock_gettime(CLOCK_MONOTONIC, &time_finish);
 
     struct timespec time_diff = difftimespec(time_finish, time_start);
     * time = timespec_to_msec(time_diff);
 
     int validate_result;
-    validate_result = validation(solution, b, m->dim);
-    free(b);
+    validate_result = verification(m, verification_b, solution);
     return validate_result;
 }
 
 
 
 int main(){
-    double *solution;
+    double *solution1, *solution2, *solution3,* verification_b;
     Matrix * m1, *debug_m;
-    // m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    m1 = read_matrix("matrices/trivial_eg/matrix.mtx");
-    read_b("./matrices/trivial_eg/b.mtx", &solution);
-    lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
-    // read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution);
-    //get dimension
-    int dim = get_dim("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    // lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
-    lsolve(m1->dim, m1->Lp, m1->Li, m1->Lx, solution);
-    for (int i=0; i<2; i++){
-        printf("%f\n", solution[i]);
-    }
+    double t1, t2, t3;
+    m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
+    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution1);
+    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution2);
+    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution3);
+    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
+
+    int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
+    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
+    int r3 = get_time(&lsolve_improve_1, m1, solution3, &t3, verification_b);
+    printf("time %f, verification %d\n", t1, r1);
+    printf("time %f, verification %d\n", t2, r2);
+    printf("time %f, verification %d\n", t3, r3);
     exit(0);
 
-
-
-    double t1, t2, t3;
-    int return_1, return_2, return_3;
-    // return_1 = get_time(&lsolve, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t1);
-    // printf("the time takes for 1 is %f, validate result %d\n", t1, return_1);
-    return_2 = get_time(&lsolve_improve_1, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t2);
-    printf("the time takes for 1 is %f, validate result %d\n", t2, return_2);
-
-    // return_3 = get_time(&lsolve_improve_2, m1, "matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", solution, &t3);
-    // printf("the time takes for 1 is %f, validate result %d\n", t3, return_3);
 }
