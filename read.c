@@ -72,7 +72,7 @@ Matrix *read_matrix(char *dir)
         Lx[total_nz] = 1;
         total_nz++;
     }
-    Lp[cur_col+1] = total_nz+1;
+    Lp[cur_col+1] = total_nz;
 
 
     mtx->dim = M;

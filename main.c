@@ -73,14 +73,7 @@ int lsolve_improve_2(int n, int *Lp, int *Li, double *Lx, double *x)
         x_tmp = x[j];
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
-            if (j == Li[p]) {x_tmp -= Lx[p] * x_tmp; }else{
-            x[Li[p]] -= Lx[p] * x_tmp;}
-            // if (x_tmp != x[j]){
-            //     printf("caonima%f %f", x_tmp, x[j]);
-            //     exit(1);
-            // }
-        }
-        x[j] = x_tmp;
+          x[Li[p]] -= Lx[p] * x_tmp; }
     }
     return (1);
 }
@@ -120,7 +113,7 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
         //mark it as visited
         visited[cur_element] = 1;
         //push all the node's non-visited children to the stack
-        for (int i=Lp[cur_element]; i<Lp[cur_element +1]; i++){
+        for (int i=Lp[cur_element]+1; i<Lp[cur_element +1]; i++){
             if (visited[Li[i]] == 0){                       
                 stack[stack_size] = Li[i];
                 stack_size++;
@@ -128,7 +121,6 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
         }
     }
 
-//TODO: sorting is required, it is already too slow since there are too many memory access
     heapSort(non_zeros, non_zeros_size);
     for(int i=0; i<non_zeros_size; i++)
     {
@@ -269,7 +261,7 @@ int main(){
     read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
-    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
+    int r2 = get_time(&lsolve_improve_2, m1, solution2, &t2, verification_b);
     int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     printf("time %f, verification %d\n", t1, r1);
     printf("time %f, verification %d\n", t2, r2);
