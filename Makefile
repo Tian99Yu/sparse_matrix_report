@@ -1,5 +1,11 @@
+CC = gcc  
+CFLAGS += -std=gnu11 -Wall -fopenmp -g3 -O3 -DNDEBUG  
+LDFLAGS += -lm -fopenmp  
+ 
+
 all: clean
-	gcc -g main.c read.c mmio.c -o main.out
+	$(CC) $(CFLAGS)  main.c read.c mmio.c -o main.out $(LDFLAGS)
+
 
 read:clean
 	gcc -g read.c mmio.c -o read.out

@@ -129,7 +129,7 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
     }
 
 //TODO: sorting is required, it is already too slow since there are too many memory access
-
+    heapSort(non_zeros, non_zeros_size);
     for(int i=0; i<non_zeros_size; i++)
     {
         j=non_zeros[i];
@@ -145,6 +145,31 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
     free(non_zeros);
     return (1);
 }
+
+
+int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
+{
+    int p, j;
+    if (!Lp || !Li || !x)
+        return (0);
+    /* check inputs */
+    for (j = 0; j < n; j++)
+    {
+        //check if x[j] is 0 to save time
+        if (x[j]==0){continue;}
+        x[j] /= Lx[Lp[j]];
+        
+        #pragma omp parallel private(p) num_threads(2)
+        #pragma omp for
+        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
+        {
+            x[Li[p]] -= Lx[p] * x[j];
+        }
+    }
+    return (1);
+}
+
+
 
 /**
  * @brief validate the output of our improved functions

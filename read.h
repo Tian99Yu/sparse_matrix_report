@@ -10,7 +10,7 @@ typedef struct
 Matrix* read_matrix(char *dir);
 void read_b(char * dir, double** b);
 int get_dim(char *dir);
-
+void heapSort(int* arr, int size);
 
 
 #endif
