@@ -107,7 +107,7 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
             stack_size++;
         }
     }
-    int cur_element, cur_col;
+    int cur_element;
     //apply DFS on the matrix to find all adjacent nodes
     while (stack_size != 0)
     {
@@ -176,8 +176,7 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 
 int verification(Matrix *mtx, double *b, double *answer)
 {
-    int nz, dim;
-    nz = mtx->nz;
+    int dim;
     dim = mtx->dim;
     double result[dim];
     memset(result, 0, sizeof(double) * dim);
@@ -242,9 +241,9 @@ int main(int argc, char *argv[])
     char *mtx_dir = argv[1];
     char *b_dir = argv[2];
 
-    double *solution1, *solution2, *solution3, *verification_b, s1, s2, s3;
+    double *solution1, *solution2, *solution3, *verification_b;
     double su1, su2, su3;
-    Matrix *m1, *debug_m;
+    Matrix *m1;
     double t1, t2, t3;
     m1 = read_matrix(mtx_dir);
     read_b(b_dir, &solution1);
