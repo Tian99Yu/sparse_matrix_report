@@ -4,6 +4,13 @@
 
 #include "mmio.h"
 #include "read.h"
+
+/**
+ * @brief read a matrix into the CSC format from the given mtx file
+ * 
+ * @param dir 
+ * @return Matrix* 
+ */
 Matrix *read_matrix(char *dir)
 {
 
@@ -82,7 +89,12 @@ Matrix *read_matrix(char *dir)
     mtx->nz = total_nz;
     return mtx;
 }
-
+/**
+ * @brief Get the matrix dimension
+ * 
+ * @param dir 
+ * @return int 
+ */
 int get_dim(char *dir)
 {
 
@@ -100,7 +112,12 @@ int get_dim(char *dir)
     mm_read_mtx_crd_size(f, &M, &N, &nz);
     return M;
 }
-
+/**
+ * @brief read the vector stored in mtx format
+ * 
+ * @param dir 
+ * @param b 
+ */
 void read_b(char *dir, double **b)
 {
     MM_typecode matcode;
@@ -134,7 +151,13 @@ void read_b(char *dir, double **b)
 }
 
 int temp;  
-
+/**
+ * @brief Function used to perform heapsort
+ * 
+ * @param arr 
+ * @param size 
+ * @param i 
+ */
 void heapify(int arr[], int size, int i)
 {
     int largest = i;
@@ -169,26 +192,3 @@ void heapSort(int arr[], int size)
         heapify(arr, i, 0);
     }
 }
-// int main()
-// {
-//     // int *Li, *Lp;
-//     // double *Lx;
-//     Matrix * m;
-//     m = read_matrix("matrices/trivial_eg/matrix_bug.mtx");
-//     for (int i=0; i<3; i++){
-//         printf("%f\n", m->Lx[i]);
-//     }
-//     printf("caonima");
-//     int * Lp;
-//     Lp = m->Lp;
-//     // for (int i = 0; i < 5; i++)
-//     // {
-//     //     printf("line %d: row index %d, col pointer %d, val %f\n",i, Li[i], Lp[i], Lx[i]);
-//     // }
-
-//     // printf("last 2 position of col pointer %d, %d",Lp[35696-1], Lp[35696]);
-
-//     // double *b;
-//     // read_b("./matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &b);
-//     // printf("random location %f, 169 pos %f, 1695 %f", b[4], b[168], b[1694]);
-// }
