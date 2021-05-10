@@ -3,7 +3,6 @@
 #include <string.h>
 #include <time.h>
 
-
 #include "mmio.h"
 #include "queue.h"
 #include "read.h"
@@ -18,25 +17,30 @@
  * @param Lx 
  * @param x 
  */
-int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
+int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
+{
     struct timespec t_s, t_f, t_d;
-    struct Queue* queue = createQueue(n);
+    struct Queue *queue = createQueue(n);
     //the array of level information for each related node
     int level[n];
-    int max_level=-1;
-    memset(level,0,sizeof(int)*n);
-    for  (int i=0;i<n;i++){
-        if(x[i]!=0){
+    int max_level = -1;
+    memset(level, 0, sizeof(int) * n);
+    for (int i = 0; i < n; i++)
+    {
+        if (x[i] != 0)
+        {
             enqueue(queue, i);
-            level[i]=1;
+            level[i] = 1;
         }
     }
-    clock_gettime(CLOCK_MONOTONIC, &t_s);    
-    while(!isEmpty(queue)){
+    clock_gettime(CLOCK_MONOTONIC, &t_s);
+    while (!isEmpty(queue))
+    {
         int v = dequeue(queue);
-        for (int i=Lp[v]+1;i<Lp[v+1]; i++){
-            level[Li[i]] = level[Li[i]]> level[v]+1? level[Li[i]]: level[v]+1;
-            max_level = max_level > level[Li[i]]? max_level:level[Li[i]];
+        for (int i = Lp[v] + 1; i < Lp[v + 1]; i++)
+        {
+            level[Li[i]] = level[Li[i]] > level[v] + 1 ? level[Li[i]] : level[v] + 1;
+            max_level = max_level > level[Li[i]] ? max_level : level[Li[i]];
             enqueue(queue, Li[i]);
         }
     }
@@ -46,15 +50,18 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
     int level_info[max_level][n];
     int level_pt[max_level];
 
-    int shit =0;
-    for (int i=0; i<n; i++){
-        if(level[i]>0) shit++;
+    int shit = 0;
+    for (int i = 0; i < n; i++)
+    {
+        if (level[i] > 0)
+            shit++;
     }
-    fprintf(stderr,"total node involved %d", shit);
+    fprintf(stderr, "total node involved %d", shit);
 
-    memset(level_pt, 0, sizeof(int)*n);
+    memset(level_pt, 0, sizeof(int) * n);
     int cur_level;
-    for (int i=0; i<n; i++){
+    for (int i = 0; i < n; i++)
+    {
         cur_level = level[i];
         level_info[cur_level][level_pt[cur_level]] = i;
         level_pt[cur_level]++;
@@ -62,37 +69,42 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
 
     clock_gettime(CLOCK_MONOTONIC, &t_s);
 
-    for (int i=1; i < max_level+1; i++){
-        int * arr = level_info[i];
+    for (int i = 1; i < max_level + 1; i++)
+    {
+        int *arr = level_info[i];
         int cur_size = level_pt[i];
-        for (int child=0; child<cur_size; child++){
-            int j=arr[child];
+        for (int child = 0; child < cur_size; child++)
+        {
+            int j = arr[child];
             x[j] /= Lx[Lp[j]];
-            for (int p = Lp[j] + 1; p<Lp[j+1] ; p++)
+            for (int p = Lp[j] + 1; p < Lp[j + 1]; p++)
             {
                 x[Li[p]] -= Lx[p] * x[j];
             }
         }
     }
-    
+
     clock_gettime(CLOCK_MONOTONIC, &t_f);
     t_d = difftimespec(t_f, t_s);
     fprintf(stderr, "compute time, %f\n", timespec_to_msec(t_d));
 
 #ifdef DEBUG
-    int i=1;
-    FILE * f= fopen("level_log.txt", "w");
-    while(level_pt[i]>0){
-        fprintf(f,"\n level %d =======\n", i);
+    int i = 1;
+    FILE *f = fopen("level_log.txt", "w");
+    while (level_pt[i] > 0)
+    {
+        fprintf(f, "\n level %d =======\n", i);
         heapSort(level_info[i], level_pt[i]);
-        for (int j=0; j<level_pt[i]; j++){
+        for (int j = 0; j < level_pt[i]; j++)
+        {
             fprintf(f, " %d ", level_info[i][j]);
         }
         i++;
     }
     exit(1);
     printf("max level: %d", max_level);
-    for(int i=0;i<n;i++){
+    for (int i = 0; i < n; i++)
+    {
         fprintf(stderr, "%d: %d\n", i, level[i]);
     }
 #endif
@@ -244,7 +256,7 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         }
     }
 
-    //do a customized BFS to generate the level array of the dependency graph directly using the 
+    //do a customized BFS to generate the level array of the dependency graph directly using the
     //given matrix
     //Later, each level could be processed in parallel (after sorting the nodes in each level)
     int iteration_count = 0;
@@ -329,17 +341,20 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
     int index = 0;
     int arr[n];
 #ifdef DEBUG
-    FILE* f = fopen("level_correct.txt", "w");
-    for (int i=0; i<level_pt_size;i++){
+    FILE *f = fopen("level_correct.txt", "w");
+    for (int i = 0; i < level_pt_size; i++)
+    {
         int cur_upper = level_pt[i];
         int cur_size = cur_upper - index;
-        for (int j=0;j<cur_size; j++){
+        for (int j = 0; j < cur_size; j++)
+        {
             arr[j] = level[index + j];
         }
         //first sort the node in that level
         heapSort(arr, cur_size);
-        fprintf(f, "\n level %d ======\n", i+1);
-        for (int m=0; m<cur_size; m++){
+        fprintf(f, "\n level %d ======\n", i + 1);
+        for (int m = 0; m < cur_size; m++)
+        {
             fprintf(f, " %d ", arr[m]);
         }
         index = cur_upper;
@@ -347,29 +362,30 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
     exit(1);
 #endif
 
-    for (int i=0; i<level_pt_size; i++){
+    for (int i = 0; i < level_pt_size; i++)
+    {
         //for each level
         int cur_upper = level_pt[i];
         int cur_size = cur_upper - index;
-        for (int j=0;j<cur_size; j++){
+        for (int j = 0; j < cur_size; j++)
+        {
             arr[j] = level[index + j];
         }
         //first sort the node in that level
         heapSort(arr, cur_size);
-        //then process the children
-        #pragma omp parallel default(shared) num_threads(1)
-        #pragma omp for 
-        for(int child=0; child<cur_size; child++)
+//then process the children
+#pragma omp parallel default(shared) num_threads(1)
+#pragma omp for
+        for (int child = 0; child < cur_size; child++)
         {
-            int j=arr[child];
+            int j = arr[child];
             x[j] /= Lx[Lp[j]];
-            for (int p = Lp[j] + 1; p<Lp[j+1] ; p++)
+            for (int p = Lp[j] + 1; p < Lp[j + 1]; p++)
             {
                 x[Li[p]] -= Lx[p] * x[j];
             }
         }
-        index=cur_upper;
-
+        index = cur_upper;
     }
 #ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &time_finish2);
@@ -404,8 +420,8 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         }
         x[j] /= Lx[Lp[j]];
 
-        #pragma omp parallel default(shared) private(p)
-        #pragma omp for
+#pragma omp parallel default(shared) private(p)
+#pragma omp for
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
@@ -448,7 +464,6 @@ int verification(Matrix *mtx, double *b, double *answer)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            printf("b: %f, result: %f, iteration %d\n", b[i], result[i], i);
             return 0;
         }
     }

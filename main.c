@@ -178,7 +178,6 @@ int verification(Matrix *mtx, double *b, double *answer)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            printf("b: %f, result: %f, iteration %d\n", b[i], result[i], i);
             return 0;
         }
     }
