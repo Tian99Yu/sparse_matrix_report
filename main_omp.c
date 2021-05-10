@@ -374,7 +374,7 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         //first sort the node in that level
         heapSort(arr, cur_size);
 //then process the children
-#pragma omp parallel default(shared) num_threads(1)
+#pragma omp parallel default(shared) 
 #pragma omp for
         for (int child = 0; child < cur_size; child++)
         {
