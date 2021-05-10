@@ -38,7 +38,16 @@ int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
     }
     return (1);
 }
-
+/**
+ * @brief improved version of lsolve
+ * 
+ * @param n 
+ * @param Lp 
+ * @param Li 
+ * @param Lx 
+ * @param x 
+ * @return int 
+ */
 int lsolve_improve_1(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     int p, j;
@@ -61,30 +70,17 @@ int lsolve_improve_1(int n, int *Lp, int *Li, double *Lx, double *x)
     return (1);
 }
 
-int lsolve_improve_2(int n, int *Lp, int *Li, double *Lx, double *x)
-{
-    int p, j;
-    double x_tmp;
-    if (!Lp || !Li || !x)
-        return (0);
-    /* check inputs */
-    for (j = 0; j < n; j++)
-    {
-        //check if x[j] is 0 to save time
-        if (x[j] == 0)
-        {
-            continue;
-        }
-        x[j] /= Lx[Lp[j]];
-        x_tmp = x[j];
-        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
-        {
-            x[Li[p]] -= Lx[p] * x_tmp;
-        }
-    }
-    return (1);
-}
-
+/**
+ * @brief improved virsion 2 of lsolve, implemented the DFS traversal to find
+ * the related dependencies
+ * 
+ * @param n 
+ * @param Lp 
+ * @param Li 
+ * @param Lx 
+ * @param x 
+ * @return int 
+ */
 int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     int p, j;
@@ -148,43 +144,24 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
     free(non_zeros);
     return (1);
 }
-
-int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
-{
-    int p, j;
-    if (!Lp || !Li || !x)
-        return (0);
-    /* check inputs */
-    for (j = 0; j < n; j++)
-    {
-        //check if x[j] is 0 to save time
-        if (x[j] == 0)
-        {
-            continue;
-        }
-        x[j] /= Lx[Lp[j]];
-
-#pragma omp parallel private(p) num_threads(2)
-#pragma omp for
-        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
-        {
-            x[Li[p]] -= Lx[p] * x[j];
-        }
-    }
-    return (1);
-}
-
+/**
+ * @brief Function used to verify the result from the lsolve function. 
+ * It calculates a vector y=Lx and compare y with the original b
+ * 
+ * @param mtx The matrix L
+ * @param b The vector b
+ * @param answer The result from lsolve function
+ * @return int 1 if the answer is correct and 0 otherwise
+ */
 int verification(Matrix *mtx, double *b, double *answer)
 {
     int dim;
     dim = mtx->dim;
+    //result is the multiplication result (y where y=Lx), I will
+    //compare the vector result with  the original b later
     double result[dim];
+    //process calculating the result vector using L*x
     memset(result, 0, sizeof(double) * dim);
-    for (int i = 0; i < dim; i++)
-    {
-        if (answer[i] > 100000)
-            printf("blow value, %f", answer[i]);
-    }
     for (int col = 0; col < dim; col++)
     {
         for (int i = mtx->Lp[col]; i < mtx->Lp[col + 1]; i++)
@@ -193,16 +170,10 @@ int verification(Matrix *mtx, double *b, double *answer)
             double val;
             row = mtx->Li[i];
             val = mtx->Lx[i];
-
-            if (answer[col] > 100000)
-                printf("blow answer, %f", answer[col]);
-            if (val > 100000)
-                printf("blow value, %f", val);
-            if (answer[col] * val > 100000)
-                printf("blow multiplication %f", val * answer[col]);
             result[row] += answer[col] * val;
         }
     }
+    //compare result with vector b
     for (int i = 0; i < dim; i++)
     {
         if (abs(b[i] - result[i]) > 0.0001)
@@ -213,7 +184,16 @@ int verification(Matrix *mtx, double *b, double *answer)
     }
     return 1;
 }
-
+/**
+ * @brief Function used to calculate the time spent on the lsolve function
+ * 
+ * @param solver_pt The functin pointer, point to the lsolve function
+ * @param m The matrix (L)
+ * @param solution The vector, (b)
+ * @param time The variable to record the time it takes
+ * @param verification_b The same vector b, but used for verification
+ * @return int The verification result, 1 for correct answer and 0 for wrong answer
+ */
 int get_time(int (*solver_pt)(int, int *, int *, double *, double *), Matrix *m, double *solution, double *time, double *verification_b)
 {
     //read matrices
@@ -231,6 +211,13 @@ int get_time(int (*solver_pt)(int, int *, int *, double *, double *), Matrix *m,
     return validate_result;
 }
 
+/**
+ * @brief Function used to calculate the speedup
+ * 
+ * @param baseline 
+ * @param cur_time 
+ * @return double 
+ */
 double get_speedup(double baseline, double cur_time)
 {
     return baseline / cur_time;
@@ -238,6 +225,11 @@ double get_speedup(double baseline, double cur_time)
 
 int main(int argc, char *argv[])
 {
+    if (argc != 3)
+    {
+        fprintf(stderr, "Usage: ./main.out **matrix dir** **b vector dir**");
+        return 1;
+    }
     char *mtx_dir = argv[1];
     char *b_dir = argv[2];
 
@@ -260,5 +252,5 @@ int main(int argc, char *argv[])
     printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
     printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
     printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
-    exit(0);
+    return 0;
 }
