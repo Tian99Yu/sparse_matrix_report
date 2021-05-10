@@ -9,82 +9,19 @@
 #include "read.h"
 #include "time_util.h"
 
-int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
-{
-    int p, j;
-    if (!Lp || !Li || !x)
-        return (0);
-    /* check inputs */
-    int *visited = malloc(n * sizeof(int));
-    memset(visited, 0, sizeof(int) * n);
-    int *stack = malloc(n * sizeof(int));
-    int *non_zeros = malloc(n * sizeof(int));
-    int stack_size, non_zeros_size;
-    stack_size = 0;
-    non_zeros_size = 0;
-    //init the stack to be non-zero elements of b
-    for (int i = 0; i < n; i++)
-    {
-        if (x[i] != 0)
-        {
-            stack[stack_size] = i;
-            stack_size++;
-        }
-    }
-    int cur_element, cur_col;
-    //apply DFS on the matrix to find all adjacent nodes
-    while (stack_size != 0)
-    {
-        //pop the element
-        cur_element = stack[stack_size - 1];
-        stack_size--;
-        if (visited[cur_element] == 1)
-            continue;
-        //push it into the X array
-        non_zeros[non_zeros_size] = cur_element;
-        non_zeros_size++;
-        //mark it as visited
-        visited[cur_element] = 1;
-        //push all the node's non-visited children to the stack
-        for (int i = Lp[cur_element]; i < Lp[cur_element + 1]; i++)
-        {
-            if (visited[Li[i]] == 0)
-            {
-                stack[stack_size] = Li[i];
-                stack_size++;
-            }
-        }
-    }
-
-    heapSort(non_zeros, non_zeros_size);
-    for (int i = 0; i < non_zeros_size; i++)
-    {
-        j = non_zeros[i];
-        x[j] /= Lx[Lp[j]];
-        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
-        {
-            x[Li[p]] -= Lx[p] * x[j];
-        }
-    }
-
-    free(visited);
-    free(stack);
-    free(non_zeros);
-    return (1);
-}
-int get_max(int a, int b){
-    if (a>b){
-        return a;
-    }
-    return b;
-}
-
-
-lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
+/**
+ * @brief A refactored version of the lsolve_level_omp. However, the result is not correct. I
+ * am still debugging it. It is not shown in the report. 
+ * @param n 
+ * @param Lp 
+ * @param Li 
+ * @param Lx 
+ * @param x 
+ */
+int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
     struct timespec t_s, t_f, t_d;
     struct Queue* queue = createQueue(n);
     //the array of level information for each related node
-
     int level[n];
     int max_level=-1;
     memset(level,0,sizeof(int)*n);
@@ -94,7 +31,6 @@ lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
             level[i]=1;
         }
     }
-
     clock_gettime(CLOCK_MONOTONIC, &t_s);    
     while(!isEmpty(queue)){
         int v = dequeue(queue);
@@ -110,23 +46,11 @@ lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
     int level_info[max_level][n];
     int level_pt[max_level];
 
-
-
     int shit =0;
     for (int i=0; i<n; i++){
         if(level[i]>0) shit++;
     }
     fprintf(stderr,"total node involved %d", shit);
-
-
-
-
-
-
-
-
-
-
 
     memset(level_pt, 0, sizeof(int)*n);
     int cur_level;
@@ -155,32 +79,46 @@ lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
     t_d = difftimespec(t_f, t_s);
     fprintf(stderr, "compute time, %f\n", timespec_to_msec(t_d));
 
-    // int i=1;
-    // FILE * f= fopen("level_log.txt", "w");
-    // while(level_pt[i]>0){
-    //     fprintf(f,"\n level %d =======\n", i);
-    //     heapSort(level_info[i], level_pt[i]);
-    //     for (int j=0; j<level_pt[i]; j++){
-    //         fprintf(f, " %d ", level_info[i][j]);
-    //     }
-    //     i++;
-    // }
-    // exit(1);
-    // printf("max level: %d", max_level);
-    // for(int i=0;i<n;i++){
-    //     fprintf(stderr, "%d: %d\n", i, level[i]);
-    // }
-
-
+#ifdef DEBUG
+    int i=1;
+    FILE * f= fopen("level_log.txt", "w");
+    while(level_pt[i]>0){
+        fprintf(f,"\n level %d =======\n", i);
+        heapSort(level_info[i], level_pt[i]);
+        for (int j=0; j<level_pt[i]; j++){
+            fprintf(f, " %d ", level_info[i][j]);
+        }
+        i++;
+    }
+    exit(1);
+    printf("max level: %d", max_level);
+    for(int i=0;i<n;i++){
+        fprintf(stderr, "%d: %d\n", i, level[i]);
+    }
+#endif
+    return 1;
 }
-
+/**
+ * @brief The improved function from the naive omp approach.
+ * It first generate the level sets based on the topological order
+ * And then parallelize the computation of each level
+ * 
+ * param meanings are the same as lsolve
+ * @param n 
+ * @param Lp 
+ * @param Li 
+ * @param Lx 
+ * @param x 
+ * @return int 
+ */
 int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     //===============analysis phase ==================================
-
+#ifdef TIMER
     struct timespec time_start1, time_finish1;
     struct timespec time_start2, time_finish2;
     clock_gettime(CLOCK_MONOTONIC, &time_start1);
+#endif
     if (!Lp || !Li || !x)
         return (0);
     //init variables
@@ -378,21 +316,19 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             level_pt_size++;
         }
     }
+#ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &time_finish1);
 
     struct timespec time_diff1 = difftimespec(time_finish1, time_start1);
     double t1 = timespec_to_msec(time_diff1);
     fprintf(stderr, "analysis time, %f", t1);
 
-    //==================compute phase===================================
-
     clock_gettime(CLOCK_MONOTONIC, &time_start2);
+#endif
+    //==================compute phase===================================
     int index = 0;
     int arr[n];
-
-
-//debug
-
+#ifdef DEBUG
     FILE* f = fopen("level_correct.txt", "w");
     for (int i=0; i<level_pt_size;i++){
         int cur_upper = level_pt[i];
@@ -409,27 +345,7 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         index = cur_upper;
     }
     exit(1);
-
-
-
-
-//end debug
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
     for (int i=0; i<level_pt_size; i++){
         //for each level
@@ -455,12 +371,24 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         index=cur_upper;
 
     }
+#ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &time_finish2);
     struct timespec time_diff2 = difftimespec(time_finish2, time_start2);
     double t2 = timespec_to_msec(time_diff2);
     fprintf(stderr, "compute time, %f", t2);
+#endif
+    return 1;
 }
-
+/**
+ * @brief The naive parallelization of the lsolve function
+ * 
+ * @param n 
+ * @param Lp 
+ * @param Li 
+ * @param Lx 
+ * @param x 
+ * @return int 
+ */
 int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     int p, j;
@@ -476,8 +404,8 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         }
         x[j] /= Lx[Lp[j]];
 
-#pragma omp parallel default(shared) private(p) num_threads(16)
-#pragma omp for nowait
+        #pragma omp parallel default(shared) private(p)
+        #pragma omp for
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
@@ -486,16 +414,24 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
     return (1);
 }
 
+/**
+ * @brief Function used to verify the result from the lsolve function. 
+ * It calculates a vector y=Lx and compare y with the original b
+ * 
+ * @param mtx The matrix L
+ * @param b The vector b
+ * @param answer The result from lsolve function
+ * @return int 1 if the answer is correct and 0 otherwise
+ */
 int verification(Matrix *mtx, double *b, double *answer)
 {
-    int nz, dim;
-    nz = mtx->nz;
+    int dim;
     dim = mtx->dim;
+    //result is the multiplication result (y where y=Lx), I will
+    //compare the vector result with  the original b later
     double result[dim];
+    //process calculating the result vector using L*x
     memset(result, 0, sizeof(double) * dim);
-    // for (int i=0;i<dim; i++){
-    //     if (answer[i] > 100000) printf("blow value, %f", answer[i]);
-    // }
     for (int col = 0; col < dim; col++)
     {
         for (int i = mtx->Lp[col]; i < mtx->Lp[col + 1]; i++)
@@ -504,26 +440,30 @@ int verification(Matrix *mtx, double *b, double *answer)
             double val;
             row = mtx->Li[i];
             val = mtx->Lx[i];
-
-            // if (answer[col] > 100000) printf("blow answer, %f", answer[col]);
-            // if (val > 100000) printf("blow value, %f", val);
-            // if (answer[col] * val > 100000) printf("blow multiplication %f",val * answer[col] );
             result[row] += answer[col] * val;
         }
     }
-    FILE *f = fopen("./log.txt", "w");
-
+    //compare result with vector b
     for (int i = 0; i < dim; i++)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            fprintf(stderr, "b: %f, result: %f, iteration %d\n", b[i], result[i], i);
+            printf("b: %f, result: %f, iteration %d\n", b[i], result[i], i);
             return 0;
         }
     }
     return 1;
 }
-
+/**
+ * @brief Function used to calculate the time spent on the lsolve function
+ * 
+ * @param solver_pt The functin pointer, point to the lsolve function
+ * @param m The matrix (L)
+ * @param solution The vector, (b)
+ * @param time The variable to record the time it takes
+ * @param verification_b The same vector b, but used for verification
+ * @return int The verification result, 1 for correct answer and 0 for wrong answer
+ */
 int get_time(int (*solver_pt)(int, int *, int *, double *, double *), Matrix *m, double *solution, double *time, double *verification_b)
 {
     //read matrices
@@ -541,38 +481,44 @@ int get_time(int (*solver_pt)(int, int *, int *, double *, double *), Matrix *m,
     return validate_result;
 }
 
-int main()
+/**
+ * @brief Function used to calculate the speedup
+ * 
+ * @param baseline 
+ * @param cur_time 
+ * @return double 
+ */
+double get_speedup(double baseline, double cur_time)
 {
+    return baseline / cur_time;
+}
+int main(int argc, char *argv[])
+{
+    if (argc != 3)
+    {
+        fprintf(stderr, "Usage: ./main.out **matrix dir** **b vector dir**");
+        return 1;
+    }
+    char *mtx_dir = argv[1];
+    char *b_dir = argv[2];
+
+    double serial_baseline = 27.326126;
 
     double *solution1, *solution2, *solution3, *verification_b;
-    Matrix *m1, *debug_m;
-    double t1, t2, t3;
-    // m1 = read_matrix("matrices/debug/matrix.mtx");
-    // read_b("matrices/debug/b.mtx", &solution1);
-    // read_b("matrices/debug/b.mtx", &verification_b);
-
-    m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution1);
-    read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
-    int r3 = get_time(&lsolve_level_improved_omp, m1, solution1, &t3, verification_b);
-    printf("time %f, verification %d\n", t3, r3);
-
-    //==================================================
-
-    // double *solution1, *solution2, *solution3,* verification_b;
-    // Matrix * m1, *debug_m;
-    // double t1, t2, t3;
-    // m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
-    // read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution1);
-    // read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution2);
-    // read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution3);
-    // read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
-
-    // int r1 = get_time(&lsolve_improve_omp, m1, solution1, &t1, verification_b);
-    // // int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
-    // // int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
-    // printf("time %f, verification %d\n", t1, r1);
-    // // printf("time %f, verification %d\n", t2, r2);
-    // // printf("time %f, verification %d\n", t3, r3);
-    // exit(0);
+    double su1, su2;
+    Matrix *m1;
+    double t1, t2;
+    m1 = read_matrix(mtx_dir);
+    read_b(b_dir, &solution1);
+    read_b(b_dir, &solution2);
+    read_b(b_dir, &solution3);
+    read_b(b_dir, &verification_b);
+    //
+    int r1 = get_time(&lsolve_improve_omp, m1, solution1, &t1, verification_b);
+    int r2 = get_time(&lsolve_level_omp, m1, solution2, &t2, verification_b);
+    su1 = get_speedup(serial_baseline, t1);
+    su2 = get_speedup(serial_baseline, t2);
+    printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
+    printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
+    return 0;
 }
