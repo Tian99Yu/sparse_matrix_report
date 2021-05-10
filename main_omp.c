@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 
+
 #include "mmio.h"
 #include "queue.h"
 #include "read.h"
@@ -71,11 +72,115 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
     free(non_zeros);
     return (1);
 }
+int get_max(int a, int b){
+    if (a>b){
+        return a;
+    }
+    return b;
+}
+
+
+lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x){
+    struct timespec t_s, t_f, t_d;
+    struct Queue* queue = createQueue(n);
+    //the array of level information for each related node
+
+    int level[n];
+    int max_level=-1;
+    memset(level,0,sizeof(int)*n);
+    for  (int i=0;i<n;i++){
+        if(x[i]!=0){
+            enqueue(queue, i);
+            level[i]=1;
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &t_s);    
+    while(!isEmpty(queue)){
+        int v = dequeue(queue);
+        for (int i=Lp[v]+1;i<Lp[v+1]; i++){
+            level[Li[i]] = level[Li[i]]> level[v]+1? level[Li[i]]: level[v]+1;
+            max_level = max_level > level[Li[i]]? max_level:level[Li[i]];
+            enqueue(queue, Li[i]);
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC, &t_f);
+    t_d = difftimespec(t_f, t_s);
+    fprintf(stderr, "BFS time %f", timespec_to_msec(t_d));
+    int level_info[max_level][n];
+    int level_pt[max_level];
+
+
+
+    int shit =0;
+    for (int i=0; i<n; i++){
+        if(level[i]>0) shit++;
+    }
+    fprintf(stderr,"total node involved %d", shit);
+
+
+
+
+
+
+
+
+
+
+
+    memset(level_pt, 0, sizeof(int)*n);
+    int cur_level;
+    for (int i=0; i<n; i++){
+        cur_level = level[i];
+        level_info[cur_level][level_pt[cur_level]] = i;
+        level_pt[cur_level]++;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &t_s);
+
+    for (int i=1; i < max_level+1; i++){
+        int * arr = level_info[i];
+        int cur_size = level_pt[i];
+        for (int child=0; child<cur_size; child++){
+            int j=arr[child];
+            x[j] /= Lx[Lp[j]];
+            for (int p = Lp[j] + 1; p<Lp[j+1] ; p++)
+            {
+                x[Li[p]] -= Lx[p] * x[j];
+            }
+        }
+    }
+    
+    clock_gettime(CLOCK_MONOTONIC, &t_f);
+    t_d = difftimespec(t_f, t_s);
+    fprintf(stderr, "compute time, %f\n", timespec_to_msec(t_d));
+
+    // int i=1;
+    // FILE * f= fopen("level_log.txt", "w");
+    // while(level_pt[i]>0){
+    //     fprintf(f,"\n level %d =======\n", i);
+    //     heapSort(level_info[i], level_pt[i]);
+    //     for (int j=0; j<level_pt[i]; j++){
+    //         fprintf(f, " %d ", level_info[i][j]);
+    //     }
+    //     i++;
+    // }
+    // exit(1);
+    // printf("max level: %d", max_level);
+    // for(int i=0;i<n;i++){
+    //     fprintf(stderr, "%d: %d\n", i, level[i]);
+    // }
+
+
+}
 
 int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     //===============analysis phase ==================================
 
+    struct timespec time_start1, time_finish1;
+    struct timespec time_start2, time_finish2;
+    clock_gettime(CLOCK_MONOTONIC, &time_start1);
     if (!Lp || !Li || !x)
         return (0);
     //init variables
@@ -273,10 +378,59 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             level_pt_size++;
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &time_finish1);
+
+    struct timespec time_diff1 = difftimespec(time_finish1, time_start1);
+    double t1 = timespec_to_msec(time_diff1);
+    fprintf(stderr, "analysis time, %f", t1);
 
     //==================compute phase===================================
+
+    clock_gettime(CLOCK_MONOTONIC, &time_start2);
     int index = 0;
     int arr[n];
+
+
+//debug
+
+    FILE* f = fopen("level_correct.txt", "w");
+    for (int i=0; i<level_pt_size;i++){
+        int cur_upper = level_pt[i];
+        int cur_size = cur_upper - index;
+        for (int j=0;j<cur_size; j++){
+            arr[j] = level[index + j];
+        }
+        //first sort the node in that level
+        heapSort(arr, cur_size);
+        fprintf(f, "\n level %d ======\n", i+1);
+        for (int m=0; m<cur_size; m++){
+            fprintf(f, " %d ", arr[m]);
+        }
+        index = cur_upper;
+    }
+    exit(1);
+
+
+
+
+//end debug
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     for (int i=0; i<level_pt_size; i++){
         //for each level
         int cur_upper = level_pt[i];
@@ -287,7 +441,7 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         //first sort the node in that level
         heapSort(arr, cur_size);
         //then process the children
-        #pragma omp parallel default(shared) num_threads(16)
+        #pragma omp parallel default(shared) num_threads(1)
         #pragma omp for 
         for(int child=0; child<cur_size; child++)
         {
@@ -301,6 +455,10 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         index=cur_upper;
 
     }
+    clock_gettime(CLOCK_MONOTONIC, &time_finish2);
+    struct timespec time_diff2 = difftimespec(time_finish2, time_start2);
+    double t2 = timespec_to_msec(time_diff2);
+    fprintf(stderr, "compute time, %f", t2);
 }
 
 int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
@@ -359,8 +517,8 @@ int verification(Matrix *mtx, double *b, double *answer)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            fprintf(f, "b: %f, result: %f, iteration %d\n", b[i], result[i], i);
-            // return 0;
+            fprintf(stderr, "b: %f, result: %f, iteration %d\n", b[i], result[i], i);
+            return 0;
         }
     }
     return 1;
@@ -389,14 +547,14 @@ int main()
     double *solution1, *solution2, *solution3, *verification_b;
     Matrix *m1, *debug_m;
     double t1, t2, t3;
-    // m1 = read_matrix("matrices/debug_2/matrix.mtx");
-    // read_b("matrices/debug_2/b.mtx", &solution1);
-    // read_b("matrices/debug_2/b.mtx", &verification_b);
+    // m1 = read_matrix("matrices/debug/matrix.mtx");
+    // read_b("matrices/debug/b.mtx", &solution1);
+    // read_b("matrices/debug/b.mtx", &verification_b);
 
     m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
     read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &solution1);
     read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
-    int r3 = get_time(&lsolve_level_omp, m1, solution1, &t3, verification_b);
+    int r3 = get_time(&lsolve_level_improved_omp, m1, solution1, &t3, verification_b);
     printf("time %f, verification %d\n", t3, r3);
 
     //==================================================

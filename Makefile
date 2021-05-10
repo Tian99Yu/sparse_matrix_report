@@ -5,7 +5,6 @@ LDFLAGS += -lm -fopenmp
 
 all: clean
 	$(CC) $(CFLAGS)  main.c read.c mmio.c -o main.out $(LDFLAGS)
-	./main.out
 
 omp: clean
 	$(CC) $(CFLAGS)  main_omp.c read.c mmio.c queue.c -o main_omp.out $(LDFLAGS)

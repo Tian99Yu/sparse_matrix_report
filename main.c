@@ -163,23 +163,6 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 
 
 
-/**
- * @brief validate the output of our improved functions
- * 
- * @param solution the baseline solution,  an array of int
- * @param answer the answer given by improved functions
- * @param size the size of the integer array
- * @return return 0 on success and 1 on failure, ie: the solution is not correct
- */
-int validation(double *solution, double * answer, int size){
-    for (int i=0; i<size; i++){
-        if (solution[i] != answer[i]){
-            return 1;
-        }
-    }
-    return 0;
-}
-
 int verification(Matrix * mtx, double* b, double* answer){
     int nz, dim;
     nz = mtx->nz;
@@ -230,12 +213,15 @@ int get_time(int (*solver_pt)(int, int*, int*, double*, double*), Matrix* m, dou
     return validate_result;
 }
 
+double get_speedup(double baseline, double cur_time){
+    return baseline / cur_time;
+}
+
 
 
 int main(){
 
-    // double *solution1, *solution2, *solution3,* verification_b;
-    // Matrix * m1, *debug_m;
+    // double *solution1, *solution2, *solution3,* verification_b; // Matrix * m1, *debug_m;
     // double t1, t2, t3;
     // m1 = read_matrix("matrices/debug_2/matrix.mtx");
     // read_b("matrices/debug_2/b.mtx", &solution1);
@@ -251,7 +237,7 @@ int main(){
 
 
     //==================================================
-    double *solution1, *solution2, *solution3,* verification_b;
+    double *solution1, *solution2, *solution3,* verification_b, s1, s2, s3;
     Matrix * m1, *debug_m;
     double t1, t2, t3;
     m1 = read_matrix("matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx");
@@ -261,7 +247,7 @@ int main(){
     read_b("matrices/TSOPF_RS_b678_c2/b_for_TSOPF_RS_b678_c2_b.mtx", &verification_b);
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
-    int r2 = get_time(&lsolve_improve_2, m1, solution2, &t2, verification_b);
+    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
     int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     printf("time %f, verification %d\n", t1, r1);
     printf("time %f, verification %d\n", t2, r2);
