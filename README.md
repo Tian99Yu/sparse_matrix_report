@@ -1,0 +1,4 @@
+- Getting Started:
+  - Download the [matrix zip file](https://drive.google.com/file/d/1UjIEWDxVYHjSS7rpN5XdOeW3hTJswI7Q/view?usp=sharing) and put it under the current folder.
+  - Create the plots by running python3 plot.py
+  - run serial/omp code with the two shell scripts

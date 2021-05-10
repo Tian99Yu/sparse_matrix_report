@@ -99,6 +99,6 @@ def plot_omp_diff_thread():
 
 
 if __name__== "__main__":
-    # plot_serial()
-    # plot_omp()
+    plot_serial()
+    plot_omp()
     plot_omp_diff_thread()
