@@ -25,10 +25,6 @@ int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
     /* check inputs */
     for (j = 0; j < n; j++)
     {
-        if (Lx[Lp[j]] != 1)
-        {
-            printf("this diagonal value is wrong, val: %f, col %d, row %d", Lx[Lp[j]], j, Lp[j]);
-        }
         x[j] /= Lx[Lp[j]];
 
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
@@ -265,13 +261,13 @@ int main(int argc, char *argv[])
     read_b(b_dir, &verification_b);
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
-    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
-    int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
+    // int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
+    // int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     su1 = get_speedup(t1, t1);
-    su2 = get_speedup(t1, t2);
-    su3 = get_speedup(t1, t3);
+    // su2 = get_speedup(t1, t2);
+    // su3 = get_speedup(t1, t3);
     printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
-    printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
-    printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
+    // printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
+    // printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
     return 0;
 }
