@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.linalg import solve_triangular
 
 def parse_row(r):
     r = r.split(" ")
@@ -44,7 +44,7 @@ def read_b(dir):
 
 L = read_mtx("matrices/torso1/torso1.mtx")
 b = read_b("matrices/torso1/b_for_torso1.mtx")
-print(np.linalg.solve(L, b))
+print(solve_triangular(L, b, lower=True))
         
 
 
