@@ -1,6 +1,7 @@
 import numpy as np
-from scipy.linalg import solve_triangular
-import scipy
+from scipy.sparse.linalg import spsolve
+import scipy.io
+from scipy.sparse import csc_matrix
 
 def parse_row(r):
     r = r.split(" ")
@@ -16,16 +17,33 @@ def read_mtx(dir):
         header = [int(i) for i in header]
         nr, nc, nz = header[0], header[1], header[2]
         #init the matrix
-        mtx = np.zeros((nr, nc), dtype="float32")
+        rows, cols, vals = [], [], []
+        cur_col = -1
         for i in range(nz):
             line = f.readline()
             i, j, v = parse_row(line)
-            if(i >= j):
-                mtx[i, j] = v
-        for i in range(nr):
-            if mtx[i,i] == 0:
-                mtx[i,i] = 1
-        return mtx
+            if j != cur_col:
+                while cur_col+1<j:
+                    cur_col+=1
+                    rows.append(cur_col)
+                    cols.append(cur_col)
+                    vals.append(1)
+                cur_col+=1
+                if i != j:
+                    rows.append(cur_col)
+                    cols.append(cur_col)
+                    vals.append(1)
+                
+            rows.append(i)
+            cols.append(j)
+            vals.append(v)
+        while cur_col < nr-1:
+            cur_col+=1
+            rows.append(cur_col)
+            cols.append(cur_col)
+            vals.append(1)
+        return csc_matrix((np.array(vals), (np.array(rows), np.array(cols))), shape=(nr,nr))
+
 
 def read_b(dir):
     with open(dir, "r") as f:
@@ -35,19 +53,21 @@ def read_b(dir):
         header = line.split(" ")
         header = [int(i) for i in header]
         nr, nc, nz = header[0], header[1], header[2]
-        b = np.zeros(nr, dtype="float32")
+        rows, cols, vals = [], [], []
         for i in range(nz):
             line = f.readline()
             i, j, v = parse_row(line)
-            b[i] = v
-        return b
+            rows.append(i)
+            cols.append(0)
+            vals.append(v)
+        return csc_matrix((np.array(vals), (np.array(rows), np.array(cols))), shape=(nr,1))
+        
 
 
 L = read_mtx("matrices/torso1/torso1.mtx")
 b = read_b("matrices/torso1/b_for_torso1.mtx")
-result = solve_triangular(L, b, lower=True)
-with open("result.txt", "w") as f:
-    for i in len(result):
-        if result[i] != 0:
-            f.write("{} {}\n".format(i, result[i]))
-        
+x = spsolve(L, b)
+x = x.reshape((-1,1))
+print(np.sum(L@x -b))
+# print(x.shape, type(x))
+# scipy.io.mmwrite("./torso1_x.mtx", x.reshape((-1,1)))
