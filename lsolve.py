@@ -3,7 +3,7 @@ import numpy as np
 
 def parse_row(r):
     r = r.split(" ")
-    return [int(r[0]), int(r[1]), float(r[2])] 
+    return [int(r[0])-1, int(r[1])-1, float(r[2])] 
 
 
 def read_mtx(dir):
@@ -31,8 +31,8 @@ def read_b(dir):
         line = f.readline()
         while line[0] == "%":
             line = f.readline()
-        header = [int(i) for i in header]
         header = line.split(" ")
+        header = [int(i) for i in header]
         nr, nc, nz = header[0], header[1], header[2]
         b = np.zeros(nr, dtype="float32")
         for i in range(nz):
