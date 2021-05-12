@@ -15,7 +15,7 @@ def read_mtx(dir):
         header = [int(i) for i in header]
         nr, nc, nz = header[0], header[1], header[2]
         #init the matrix
-        mtx = np.zeros((nr, nc))
+        mtx = np.zeros((nr, nc), dtype="float32")
         for i in range(nz):
             line = f.readline()
             i, j, v = parse_row(line)
@@ -34,7 +34,7 @@ def read_b(dir):
         header = [int(i) for i in header]
         header = line.split(" ")
         nr, nc, nz = header[0], header[1], header[2]
-        b = np.zeros(nr)
+        b = np.zeros(nr, dtype="float32")
         for i in range(nz):
             line = f.readline()
             i, j, v = parse_row(line)
