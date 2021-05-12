@@ -150,6 +150,7 @@ void read_b(char *dir, double **b)
     }
 }
 
+
 int temp;  
 /**
  * @brief Function used to perform heapsort

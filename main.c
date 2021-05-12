@@ -222,6 +222,27 @@ double get_speedup(double baseline, double cur_time)
     return baseline / cur_time;
 }
 
+
+void print_m(Matrix *m)
+{
+    FILE *f = fopen("matrix.txt", "w");
+    fprintf(f, "CCSMatrix\n");
+    fprintf(f, "num_row: %d\n", m->dim);
+    fprintf(f, "num_col: %d\n", m->dim);
+    fprintf(f, "num_val: %d\n", m->nz);
+    fprintf(f, "column pointer: \n");
+    for (int i = 0; i < m->dim+1; i++)
+    {
+        fprintf(f, " %d ", m->Lp[i]);
+    }
+    fprintf(f, "\n");
+    fprintf(f, "row index: \n");
+    for (int i=0; i<m->nz; i++){
+        fprintf(f, " %d ", m->Li[i]);
+    }
+}
+
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -235,6 +256,7 @@ int main(int argc, char *argv[])
     double *solution1, *solution2, *solution3, *verification_b;
     double su1, su2, su3;
     Matrix *m1;
+
     double t1, t2, t3;
     m1 = read_matrix(mtx_dir);
     read_b(b_dir, &solution1);
