@@ -42,7 +42,7 @@ Matrix *read_matrix(char *dir)
     double val;
     total_nz = 0;
     for(int i=0; i<nz;i++){
-        fscanf(f, "%d %d %lg\n", &row, &col, &val);
+        fscanf(f, "%d %d %lf\n", &row, &col, &val);
         row--;
         col--;
         if (row <= col){continue;}

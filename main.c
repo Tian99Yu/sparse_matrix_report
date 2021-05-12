@@ -170,14 +170,16 @@ int verification(Matrix *mtx, double *b, double *answer)
         }
     }
     //compare result with vector b
+    int correct = 1;
     for (int i = 0; i < dim; i++)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            return 0;
+            fprintf(stderr, "diff %f, b %f, r %f, i %d\n", b[i]- result[i], b[i], result[i], i);
+            correct = 0;
         }
     }
-    return 1;
+    return correct;
 }
 /**
  * @brief Function used to calculate the time spent on the lsolve function
