@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.linalg import solve_triangular
+import scipy
 
 def parse_row(r):
     r = r.split(" ")
@@ -44,8 +45,9 @@ def read_b(dir):
 
 L = read_mtx("matrices/torso1/torso1.mtx")
 b = read_b("matrices/torso1/b_for_torso1.mtx")
-print(solve_triangular(L, b, lower=True))
+result = solve_triangular(L, b, lower=True)
+with open("result.txt", "w") as f:
+    for i in len(result):
+        if result[i] != 0:
+            f.write("{} {}\n".format(i, result[i]))
         
-
-
-    
