@@ -62,12 +62,25 @@ def read_b(dir):
             vals.append(v)
         return csc_matrix((np.array(vals), (np.array(rows), np.array(cols))), shape=(nr,1))
         
+if __name__ == "__main__":
+    t_f = input("T or F?")
+    if t_f == "T":
+        mdir = "matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx"
+        bdir = "matrices/TSOPF_RS_b678_c2/TSOPF_RS_b678_c2.mtx"
+    elif t_f == "F":
+        mdir = "matrices/torso1/torso1.mtx"
+        bdir = "matrices/torso1/b_for_torso1.mtx"
+    else:
+        mdir="matrices/debug_3/matrix.mtx"
+        bdir="matrices/debug_3/b.mtx"
+    L = read_mtx(mdir)
+    b = read_b(bdir)
+    x = spsolve(L, b)
+    x = x.reshape((-1,1))
+    with open("./torso1_x.txt", "w") as f:
+        for i in range(x.shape[0]):
+            if x[i, 0] != 0:
+                f.write("{} {}\n".format(i, x[i,0]))
 
-
-L = read_mtx("matrices/torso1/torso1.mtx")
-b = read_b("matrices/torso1/b_for_torso1.mtx")
-x = spsolve(L, b)
-x = x.reshape((-1,1))
-print(np.sum(L@x -b))
-# print(x.shape, type(x))
-# scipy.io.mmwrite("./torso1_x.mtx", x.reshape((-1,1)))
+    # print(np.sum(L@x -b))
+    # scipy.io.mmwrite("./torso1_x.mtx", x.reshape((-1,1)))

@@ -45,26 +45,23 @@ Matrix *read_matrix(char *dir)
         fscanf(f, "%d %d %lg\n", &row, &col, &val);
         row--;
         col--;
-        if (row <= col){continue;}
+        if (row < col){continue;}
         //if change to a new column
         if (cur_col != col){
-            // case 1, no diagonal gap
-            if (cur_col + 1 == col){
-                //directly add a diagonal value
-                cur_col ++;
+            while(cur_col+1 < col){
+                cur_col++;
                 Lp[cur_col] = total_nz;
-                Li[total_nz] = col;
+                Li[total_nz] = cur_col;
                 Lx[total_nz] = 1;
                 total_nz ++;
-            }else{
-                //case2 diagonal gap, then fill all col's diagonals
-                while(cur_col < col){
-                    cur_col++;
-                    Lp[cur_col] = total_nz;
-                    Li[total_nz] = cur_col;
-                    Lx[total_nz] = 1;
-                    total_nz ++;
-                }
+            }
+            cur_col ++;
+            Lp[cur_col] = total_nz;
+            // fprintf(stderr, "Lp[cur_col] %d, cur_col %d, total_nz %d", Lp[cur_col], cur_col, total_nz);
+            if (row != col){
+            Li[total_nz] = col;
+            Lx[total_nz] = 1;
+            total_nz ++;
             }
         }
         Li[total_nz] = row;

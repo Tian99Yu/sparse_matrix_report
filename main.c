@@ -6,31 +6,43 @@
 #include "mmio.h"
 #include "read.h"
 #include "time_util.h"
-/*
-* Lower triangular solver Lx=b
-* L is stored in the compressed column storage format
-* Inputs are:
-* n : the matrix dimension
-* Lp : the column pointer of L
-* Li : the row index of L
-* Lx : the values of L
-* In/Out:
-* x : the right hand-side b at start and the solution x at the end.
-*/
-int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
+// /*
+// * Lower triangular solver Lx=b
+// * L is stored in the compressed column storage format
+// * Inputs are:
+// * n : the matrix dimension
+// * Lp : the column pointer of L
+// * Li : the row index of L
+// * Lx : the values of L
+// * In/Out:
+// * x : the right hand-side b at start and the solution x at the end.
+// */
+// int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
+// {
+//     int p, j;
+//     if (!Lp || !Li || !x)
+//         return (0);
+//     /* check inputs */
+//     for (j = 0; j < n; j++)
+//     {
+//         x[j] /= Lx[Lp[j]];
+
+//         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
+//         {
+//             x[Li[p]] -= Lx[p] * x[j];
+//         }
+//     }
+//     return (1);
+// }
+
+/* * Lower triangular solver Lx=b * L is stored in the compressed column storage format * Inputs are:  * n : the matrix dimension  * Lp : the column pointer of L * Li : the row index of L * Lx : the values of L * In/Out: * x : the right hand-side b at start and the solution x at the end. */ int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
 {
     int p, j;
     if (!Lp || !Li || !x)
-        return (0);
-    /* check inputs */
+        return (0); /* check inputs */
     for (j = 0; j < n; j++)
     {
-        if (Lx[Lp[j]] != 1)
-        {
-            printf("this diagonal value is wrong, val: %f, col %d, row %d", Lx[Lp[j]], j, Lp[j]);
-        }
         x[j] /= Lx[Lp[j]];
-
         for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
         {
             x[Li[p]] -= Lx[p] * x[j];
@@ -155,6 +167,14 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
  */
 int verification(Matrix *mtx, double *b, double *answer)
 {
+    FILE *f = fopen("torso_x_coutput.txt", "w");
+    for (int i = 0; i < mtx->dim; i++)
+    {
+        if (answer[i] == 0)
+            continue;
+        fprintf(f, "%d %lf\n", i, answer[i]);
+    }
+    // exit(1);
     int dim;
     dim = mtx->dim;
     //result is the multiplication result (y where y=Lx), I will
@@ -174,14 +194,16 @@ int verification(Matrix *mtx, double *b, double *answer)
         }
     }
     //compare result with vector b
+    int correct = 1;
     for (int i = 0; i < dim; i++)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            return 0;
+            fprintf(stderr, "diff %f, b %f, r %f, i %d\n", b[i] - result[i], b[i], result[i], i);
+            correct = 0;
         }
     }
-    return 1;
+    return correct;
 }
 /**
  * @brief Function used to calculate the time spent on the lsolve function
@@ -222,6 +244,54 @@ double get_speedup(double baseline, double cur_time)
     return baseline / cur_time;
 }
 
+void print_m(Matrix *m)
+{
+    FILE *f = fopen("matrix.txt", "w");
+    fprintf(f, "CCSMatrix\n");
+    fprintf(f, "num_row: %d\n", m->dim);
+    fprintf(f, "num_col: %d\n", m->dim);
+    fprintf(f, "num_val: %d\n", m->nz);
+    fprintf(f, "column pointer: ");
+    for (int i = 0; i < m->dim + 1; i++)
+    {
+        fprintf(f, " %d ", m->Lp[i]);
+    }
+    fprintf(f, "\n");
+    fprintf(f, "row index: ");
+    for (int i = 0; i < m->nz; i++)
+    {
+        fprintf(f, " %d ", m->Li[i]);
+    }
+    fprintf(f, "\n");
+    for (int i = 0; i < m->nz; i++)
+    {
+        fprintf(f, " %f ", m->Lx[i]);
+    }
+}
+
+int validate_read_result(Matrix *mtx)
+{
+    int dim = mtx->dim;
+    int *Lp = mtx->Lp;
+    int *Li = mtx->Li;
+    for (int i = 0; i < dim; i++)
+    {
+        //check there is a diagonal
+        if (i != Li[Lp[i]])
+            return 0;
+        for (int j = Lp[i]; j < Lp[i + 1]; j++)
+        {
+            //check the all element are in the lower left (violation if row index < col index)
+            if (Li[j] < i)
+            {
+                fprintf(stderr, "false, col number %d, row number %d, Li[j] value %d, Lp[i] %d\n", i, j, Li[j], Lp[i]);
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -237,19 +307,26 @@ int main(int argc, char *argv[])
     Matrix *m1;
     double t1, t2, t3;
     m1 = read_matrix(mtx_dir);
+    int read_result_validation = validate_read_result(m1);
+    fprintf(stderr, "validate result for reading %d\n", read_result_validation);
+    // exit(1);
+    // print_m(m1);
+
+    // exit(1);
+
     read_b(b_dir, &solution1);
     read_b(b_dir, &solution2);
     read_b(b_dir, &solution3);
     read_b(b_dir, &verification_b);
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
-    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
-    int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
+    // int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
+    // int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     su1 = get_speedup(t1, t1);
-    su2 = get_speedup(t1, t2);
-    su3 = get_speedup(t1, t3);
+    // su2 = get_speedup(t1, t2);
+    // su3 = get_speedup(t1, t3);
     printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
-    printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
-    printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
+    // printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
+    // printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
     return 0;
 }
