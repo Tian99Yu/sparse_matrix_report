@@ -151,6 +151,13 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
  */
 int verification(Matrix *mtx, double *b, double *answer)
 {
+    FILE *f = fopen("torso_x_coutput.txt", "w");
+    for (int i = 0; i < mtx->dim; i++)
+    {
+        if (answer[i] == 0)
+            continue;
+        fprintf(f, "%d %lf\n", i, answer[i]);
+    }
     int dim;
     dim = mtx->dim;
     //result is the multiplication result (y where y=Lx), I will

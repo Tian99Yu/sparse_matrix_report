@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.linalg
-
+import math
 def execute_command(command):
     print(">>>>> Executing command {}".format(command), flush=True)
     process = subprocess.Popen(command, stdout = subprocess.PIPE,
@@ -22,7 +22,7 @@ def execute_command(command):
     return output
 
 #generate matrix
-def gen_matrix(dir):
+def gen_matrix(dir, dim, sparse_rate):
     header = """%%MatrixMarket matrix coordinate real general
 %-------------------------------------------------------------------------------
 % UF Sparse Matrix Collection, Tim Davis
@@ -37,30 +37,30 @@ def gen_matrix(dir):
 % kind: 2D/3D problem
 %-----------------------------------------------------------
 """
-    rows = np.random.randint(0, 100, 100)
-    cals = np.random.randint(0, 100, 100)
-    vals = np.random.randint(1, 50, 100)
-    mtx = np.zeros((100,100))
+    rows = np.random.randint(0, dim, math.ceil(dim**2 * sparse_rate))
+    cals = np.random.randint(0, dim, math.ceil(dim**2 * sparse_rate))
+    vals = np.random.randint(1, 50, math.ceil(dim**2 * sparse_rate))
+    mtx = np.zeros((dim,dim))
     with open(dir, "w") as f:
         f.write(header)
-        f.write("100 100 100\n")
-        for i in range(100):
+        f.write("{} {} {}\n".format(dim, dim,math.ceil(dim**2 * sparse_rate) ))
+        for i in range(math.ceil(dim**2 * sparse_rate)):
             index = [rows[i], cals[i]]
             index.sort()
             c, r = index
             assert(r>=c)
             mtx[r,c] = vals[i]
-        for j in range(100):
-            for i in range(100):
+        for j in range(dim):
+            for i in range(dim):
                 if i == j:
-                    f.write("{} {} {}\n".format(i,j, 1))
+                    f.write("{} {} {}\n".format(i+1,j+1, 1))
                     mtx[i,j] = 1
                 elif mtx[i,j] != 0:
-                    f.write("{} {} {}\n".format(i,j, mtx[i,j]))
+                    f.write("{} {} {}\n".format(i+1,j+1, mtx[i,j]))
     return mtx
 
 
-def gen_b(dir):
+def gen_b(dir, dim, num_element):
     header = """%%MatrixMarket matrix coordinate real general
 %-------------------------------------------------------------------------------
 % UF Sparse Matrix Collection, Tim Davis
@@ -75,15 +75,15 @@ def gen_b(dir):
 % kind: 2D/3D problem
 %-----------------------------------------------------------
 """
-    index = np.random.randint(0, 100, 10)
+    index = np.random.randint(0, dim, num_element)
     index.sort()
-    vals = np.random.randint(0, 100, 10)
-    b = np.zeros((100,1))
+    vals = np.random.randint(0, 100, num_element)
+    b = np.zeros((dim,1))
     with open(dir, "w") as f:
         f.write(header)
-        f.write("100 1 10\n")
-        for i in range(10):
-            f.write("{} 1 {}\n".format(index[i], vals[i]))
+        f.write("{} 1 {}\n".format(dim, num_element))
+        for i in range(num_element):
+            f.write("{} 1 {}\n".format(index[i]+1, vals[i]))
             b[index[i],0] = vals[i]
     return b
 
@@ -91,23 +91,29 @@ def parse_row(row):
     row = row.split(" ")
     return [int(row[0]), float(row[1])]
 def validate_function():
-    L = gen_matrix("./matrix.mtx")
-    b = gen_b("./b.mtx")
+    dim=10
+    sparse_rate = 0.1
+    L = gen_matrix("./matrix.mtx", dim, sparse_rate)
+    print(L)
+    b = gen_b("./b.mtx", dim, 3)
     execute_command("rm ./*.txt")
     execute_command("make")
     ret = execute_command("./main.out ./matrix.mtx ./b.mtx")
     x = scipy.linalg.solve_triangular(L, b, lower=True, unit_diagonal=True)
     x = x.reshape(-1)
-    x_cout = np.zeros(100)
+    x_cout = np.zeros(dim)
     with open("./torso_x_coutput.txt", "r") as f:
         l = f.readline()
         while l:
             index, val = parse_row(l)
             x_cout[index] = val
             l = f.readline()
+    print(ret)
+    print(x)
     print(x_cout)
     return np.sum(x_cout-x), np.sum(L@x_cout - b)
 
 
 if __name__ == "__main__":
+    np.set_printoptions(suppress=True)
     print(validate_function())
