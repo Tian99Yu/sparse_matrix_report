@@ -7,7 +7,7 @@ import pandas as pd
 import scipy.linalg
 import math
 def execute_command(command):
-    print(">>>>> Executing command {}".format(command), flush=True)
+    # print(">>>>> Executing command {}".format(command), flush=True)
     process = subprocess.Popen(command, stdout = subprocess.PIPE,
                                stderr = subprocess.STDOUT, shell=True,
                                universal_newlines = True)
@@ -42,20 +42,25 @@ def gen_matrix(dir, dim, sparse_rate):
     vals = np.random.randint(1, 50, math.ceil(dim**2 * sparse_rate))
     mtx = np.zeros((dim,dim))
     with open(dir, "w") as f:
-        f.write(header)
-        f.write("{} {} {}\n".format(dim, dim,math.ceil(dim**2 * sparse_rate) ))
         for i in range(math.ceil(dim**2 * sparse_rate)):
             index = [rows[i], cals[i]]
             index.sort()
             c, r = index
             assert(r>=c)
             mtx[r,c] = vals[i]
+        for i in range(dim):
+            for j in range(dim):
+                if i==j: mtx[i, j]=1
+        nz=5
+        for i in range(dim):
+            for j in range(dim):
+                if mtx[i,j] !=0:
+                    nz+=1
+        f.write(header)
+        f.write("{} {} {}\n".format(dim, dim,nz ))
         for j in range(dim):
             for i in range(dim):
-                if i == j:
-                    f.write("{} {} {}\n".format(i+1,j+1, 1))
-                    mtx[i,j] = 1
-                elif mtx[i,j] != 0:
+                if mtx[i,j] != 0:
                     f.write("{} {} {}\n".format(i+1,j+1, mtx[i,j]))
     return mtx
 
@@ -90,12 +95,13 @@ def gen_b(dir, dim, num_element):
 def parse_row(row):
     row = row.split(" ")
     return [int(row[0]), float(row[1])]
-def validate_function():
-    dim=10
-    sparse_rate = 0.1
+def validate_function(p, dim=20, sparse_rate=0.1):
     L = gen_matrix("./matrix.mtx", dim, sparse_rate)
-    print(L)
+    if p:
+        print(L)
     b = gen_b("./b.mtx", dim, 3)
+    if p:
+        print(b)
     execute_command("rm ./*.txt")
     execute_command("make")
     ret = execute_command("./main.out ./matrix.mtx ./b.mtx")
@@ -108,12 +114,26 @@ def validate_function():
             index, val = parse_row(l)
             x_cout[index] = val
             l = f.readline()
-    print(ret)
-    print(x)
-    print(x_cout)
+    if p:
+        print(ret)
+        print(x)
+        print(x_cout)
+    for i in range(x.shape[0]):
+        if x[i] != x_cout[i]:
+            print("x: {} x_cout: {}".format(x[i], x_cout[i]))
     return np.sum(x_cout-x), np.sum(L@x_cout - b)
+
+
+def validate_looping(num_loop):
+    for i in range(num_loop):
+        x_s, b_s = validate_function(False)
+        print(x_s, b_s)
+        if x_s != 0 or b_s != 0:
+            return False
+    return True
 
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
-    print(validate_function())
+    # print(validate_function(False, 1000))
+    print(validate_looping(10000))
