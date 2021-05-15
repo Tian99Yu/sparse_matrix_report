@@ -68,7 +68,7 @@ def plot_omp():
     }, index=index)
 
     ax = df.plot.bar()
-    plt.title("Parallel Speedup Comparison, #T=16")
+    plt.title("Parallel Speedup Comparison, #T=12")
     plt.ylabel("Speedup")
     plt.xticks(rotation = 15)
     for p in ax.patches:
@@ -77,7 +77,7 @@ def plot_omp():
 def plot_omp_diff_thread():
     execute_command("make omp")
     naive, level = [], []
-    index = [2,4,8,16]
+    index = [2,4,8,12]
     for i in index:
         ret = execute_command("OMP_NUM_THREADS={} ./main_omp.out {} {}".format(i,dirs[1][0], dirs[1][1]))
         rows = ret.split("\n")
