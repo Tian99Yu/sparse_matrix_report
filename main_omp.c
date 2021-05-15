@@ -24,7 +24,9 @@
  */
 int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
 {
+    #ifdef TIMER
     struct timespec t_s, t_f, t_d;
+    #endif
     struct Queue *queue = createQueue(n);
     //the array of level information for each related node
     int level[n];
@@ -38,7 +40,9 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             level[i] = 1;
         }
     }
+    #ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &t_s);
+    #endif
     while (!isEmpty(queue))
     {
         int v = dequeue(queue);
@@ -49,12 +53,14 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             enqueue(queue, Li[i]);
         }
     }
+    #ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &t_f);
     t_d = difftimespec(t_f, t_s);
     fprintf(stderr, "BFS time %f", timespec_to_msec(t_d));
+    #endif
     int level_info[max_level][n];
     int level_pt[max_level];
-
+    #ifdef DEBUG
     int shit = 0;
     for (int i = 0; i < n; i++)
     {
@@ -62,7 +68,7 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             shit++;
     }
     fprintf(stderr, "total node involved %d", shit);
-
+    #endif
     memset(level_pt, 0, sizeof(int) * n);
     int cur_level;
     for (int i = 0; i < n; i++)
@@ -71,9 +77,9 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         level_info[cur_level][level_pt[cur_level]] = i;
         level_pt[cur_level]++;
     }
-
+    #ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &t_s);
-
+    #endif
     for (int i = 1; i < max_level + 1; i++)
     {
         int *arr = level_info[i];
@@ -88,15 +94,16 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             }
         }
     }
-
+    #ifdef TIMER
     clock_gettime(CLOCK_MONOTONIC, &t_f);
     t_d = difftimespec(t_f, t_s);
     fprintf(stderr, "compute time, %f\n", timespec_to_msec(t_d));
-
+    #endif
 #ifdef DEBUG
     int i = 1;
     FILE *f = fopen("level_log.txt", "w");
-    while (level_pt[i] > 0)
+    int xx = 0;
+    while (xx < max_level)
     {
         fprintf(f, "\n level %d =======\n", i);
         heapSort(level_info[i], level_pt[i]);
@@ -105,6 +112,7 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
             fprintf(f, " %d ", level_info[i][j]);
         }
         i++;
+        xx++;
     }
     // exit(1);
     printf("max level: %d", max_level);
@@ -388,14 +396,16 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         //first sort the node in that level
         heapSort(arr, cur_size);
 //then process the children
-// #pragma omp parallel default(shared) num_threads(1)
+// #pragma omp parallel default(shared)
 // #pragma omp for
         for (int child = 0; child < cur_size; child++)
         {
             int j = arr[child];
+            //no need to add omp critical here as elements at the same level are independent 
             x[j] /= Lx[Lp[j]];
             for (int p = Lp[j] + 1; p < Lp[j + 1]; p++)
             {
+                // #pragma omp critical
                 x[Li[p]] -= Lx[p] * x[j];
             }
         }
@@ -550,11 +560,11 @@ int main(int argc, char *argv[])
     read_b(b_dir, &solution3);
     read_b(b_dir, &verification_b);
     //
-    // int r1 = get_time(&lsolve_level_improved_omp, m1, solution1, &t1, verification_b);
+    int r1 = get_time(&lsolve_level_improved_omp, m1, solution1, &t1, verification_b);
     int r2 = get_time(&lsolve_level_omp, m1, solution2, &t2, verification_b);
-    // su1 = get_speedup(serial_baseline, t1);
+    su1 = get_speedup(serial_baseline, t1);
     su2 = get_speedup(serial_baseline, t2);
-    // printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
+    printf("time %f, speed up % f, verification %d\n", t1, su1, r1);
     printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
     return 0;
 }

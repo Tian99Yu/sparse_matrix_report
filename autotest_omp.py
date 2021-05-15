@@ -120,12 +120,12 @@ def validate_function(p, dim=20, sparse_rate=0.1):
     if p:
         print(L)
         draw_graph("graph.pdf", L)
-    b = gen_b("./b.mtx", dim, 3)
+    b = gen_b("./b.mtx", dim, 8)
     if p:
         print(b)
     execute_command("rm ./*.txt")
     execute_command("make omp")
-    ret = execute_command("OMP_NUM_THREADS=1 ./main_omp.out ./matrix.mtx ./b.mtx")
+    ret = execute_command("OMP_NUM_THREADS=8 ./main_omp.out ./matrix.mtx ./b.mtx")
     x = scipy.linalg.solve_triangular(L, b, lower=True, unit_diagonal=True)
     x = x.reshape(-1)
     x_cout = np.zeros(dim)
@@ -155,6 +155,9 @@ def validate_looping(num_loop):
 
 
 if __name__ == "__main__":
-    np.set_printoptions(suppress=True)
-    print(validate_function(True, 20, 0.05 ))
-    # print(validate_looping(10000))
+    # np.set_printoptions(suppress=True)
+    print(validate_function(True, 20, 0.5 ))
+    # print(validate_looping(100))
+    # L = gen_matrix("./matrix.mtx", 20, 0.5)
+    # print(L)
+    # b = gen_b("./b.mtx", 20, 9)
