@@ -8,6 +8,11 @@
 #include "read.h"
 #include "time_util.h"
 
+// #ifndef DEBUG
+// #define DEBUG
+// #endif
+
+
 /**
  * @brief A refactored version of the lsolve_level_omp. However, the result is not correct. I
  * am still debugging it. It is not shown in the report. 
@@ -101,7 +106,7 @@ int lsolve_level_improved_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         }
         i++;
     }
-    exit(1);
+    // exit(1);
     printf("max level: %d", max_level);
     for (int i = 0; i < n; i++)
     {
@@ -194,15 +199,23 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
     //children node of other non-zero element of input "b", thus I need to run DFS a second
     //time after getting rid of them
     int restart_loop = 0;
-    for (int i = 0; i < n; i++)
-    {
-        if (x[i] != 0 && num_parent[i] != 1)
-        {
-            //there is a subtree top node
-            restart_loop = 1;
-            x[i] = 0;
+    int not_enqueue[n];
+    memset(not_enqueue, 0, n*sizeof(int));
+    for (int i=0; i<n; i++){
+        if (x[i]!=0 && num_parent[i]!=1){
+            not_enqueue[i] = 1;
+            restart_loop =1;
         }
     }
+    // for (int i = 0; i < n; i++)
+    // {
+    //     if (x[i] != 0 && num_parent[i] != 1)
+    //     {
+    //         //there is a subtree top node
+    //         restart_loop = 1;
+    //         x[i] = 0;
+    //     }
+    // }
     //Here is  the place to run DFS a second time for that purpose
     if (restart_loop)
     {
@@ -212,7 +225,7 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         //init level 0 with all non-zero elements in b
         for (int i = 0; i < n; i++)
         {
-            if (x[i] != 0)
+            if (x[i] != 0 && not_enqueue[i]==0)
             {
                 // level[level_size] = i;
                 stack[stack_size] = i;
@@ -359,7 +372,8 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         }
         index = cur_upper;
     }
-    exit(1);
+    index=0;
+    // exit(1);
 #endif
 
     for (int i = 0; i < level_pt_size; i++)
@@ -374,8 +388,8 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         //first sort the node in that level
         heapSort(arr, cur_size);
 //then process the children
-#pragma omp parallel default(shared) 
-#pragma omp for
+// #pragma omp parallel default(shared) num_threads(1)
+// #pragma omp for
         for (int child = 0; child < cur_size; child++)
         {
             int j = arr[child];
@@ -441,6 +455,13 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
  */
 int verification(Matrix *mtx, double *b, double *answer)
 {
+    FILE *f = fopen("torso_x_coutput.txt", "w");
+    for (int i = 0; i < mtx->dim; i++)
+    {
+        if (answer[i] == 0)
+            continue;
+        fprintf(f, "%d %lf\n", i, answer[i]);
+    }
     int dim;
     dim = mtx->dim;
     //result is the multiplication result (y where y=Lx), I will
@@ -529,11 +550,11 @@ int main(int argc, char *argv[])
     read_b(b_dir, &solution3);
     read_b(b_dir, &verification_b);
     //
-    int r1 = get_time(&lsolve_improve_omp, m1, solution1, &t1, verification_b);
+    // int r1 = get_time(&lsolve_level_improved_omp, m1, solution1, &t1, verification_b);
     int r2 = get_time(&lsolve_level_omp, m1, solution2, &t2, verification_b);
-    su1 = get_speedup(serial_baseline, t1);
+    // su1 = get_speedup(serial_baseline, t1);
     su2 = get_speedup(serial_baseline, t2);
-    printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
+    // printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
     printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
     return 0;
 }
