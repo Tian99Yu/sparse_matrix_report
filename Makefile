@@ -1,5 +1,5 @@
 CC = gcc  
-CFLAGS += -std=gnu11 -Wall -fopenmp -g3 -DNDEBUG 
+CFLAGS += -std=gnu11 -Wall -fopenmp -g3 -O3  -DNDEBUG 
 LDFLAGS += -lm -fopenmp  
  
 

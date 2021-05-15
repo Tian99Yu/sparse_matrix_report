@@ -150,7 +150,8 @@ int lsolve_DFS_traversal(int n, int *Lp, int *Li, double *Lx, double *x)
  * @return int 1 if the answer is correct and 0 otherwise
  */
 int verification(Matrix *mtx, double *b, double *answer)
-{
+{   
+    #ifdef DEBUG
     FILE *f = fopen("torso_x_coutput.txt", "w");
     for (int i = 0; i < mtx->dim; i++)
     {
@@ -158,6 +159,7 @@ int verification(Matrix *mtx, double *b, double *answer)
             continue;
         fprintf(f, "%d %lf\n", i, answer[i]);
     }
+    #endif
     int dim;
     dim = mtx->dim;
     //result is the multiplication result (y where y=Lx), I will
@@ -182,7 +184,9 @@ int verification(Matrix *mtx, double *b, double *answer)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
+            #ifdef DEBUG
             fprintf(stderr, "diff %f, b %f, r %f, i %d\n", b[i]- result[i], b[i], result[i], i);
+            #endif
             correct = 0;
         }
     }
@@ -270,13 +274,13 @@ int main(int argc, char *argv[])
     read_b(b_dir, &verification_b);
 
     int r1 = get_time(&lsolve, m1, solution1, &t1, verification_b);
-    // int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
-    // int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
+    int r2 = get_time(&lsolve_improve_1, m1, solution2, &t2, verification_b);
+    int r3 = get_time(&lsolve_DFS_traversal, m1, solution3, &t3, verification_b);
     su1 = get_speedup(t1, t1);
-    // su2 = get_speedup(t1, t2);
-    // su3 = get_speedup(t1, t3);
+    su2 = get_speedup(t1, t2);
+    su3 = get_speedup(t1, t3);
     printf("time %f, speed up %f, verification %d\n", t1, su1, r1);
-    // printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
-    // printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
+    printf("time %f, speed up %f, verification %d\n", t2, su2, r2);
+    printf("time %f, speed up %f, verification %d\n", t3, su3, r3);
     return 0;
 }

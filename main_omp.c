@@ -13,6 +13,23 @@
 // #endif
 
 
+int lsolve(int n, int *Lp, int *Li, double *Lx, double *x)
+{
+    int p, j;
+    if (!Lp || !Li || !x)
+        return (0);
+    /* check inputs */
+    for (j = 0; j < n; j++)
+    {
+        x[j] /= Lx[Lp[j]];
+
+        for (p = Lp[j] + 1; p < Lp[j + 1]; p++)
+        {
+            x[Li[p]] -= Lx[p] * x[j];
+        }
+    }
+    return (1);
+}
 /**
  * @brief A refactored version of the lsolve_level_omp. However, the result is not correct. I
  * am still debugging it. It is not shown in the report. 
@@ -464,7 +481,8 @@ int lsolve_improve_omp(int n, int *Lp, int *Li, double *Lx, double *x)
  * @return int 1 if the answer is correct and 0 otherwise
  */
 int verification(Matrix *mtx, double *b, double *answer)
-{
+{   
+    #ifdef DEBUG
     FILE *f = fopen("torso_x_coutput.txt", "w");
     for (int i = 0; i < mtx->dim; i++)
     {
@@ -472,6 +490,7 @@ int verification(Matrix *mtx, double *b, double *answer)
             continue;
         fprintf(f, "%d %lf\n", i, answer[i]);
     }
+    #endif
     int dim;
     dim = mtx->dim;
     //result is the multiplication result (y where y=Lx), I will
@@ -491,14 +510,18 @@ int verification(Matrix *mtx, double *b, double *answer)
         }
     }
     //compare result with vector b
+    int correct = 1;
     for (int i = 0; i < dim; i++)
     {
         if (abs(b[i] - result[i]) > 0.0001)
         {
-            return 0;
+            #ifdef DEBUG
+            fprintf(stderr, "diff %f, b %f, r %f, i %d\n", b[i]- result[i], b[i], result[i], i);
+            #endif
+            correct = 0;
         }
     }
-    return 1;
+    return correct;
 }
 /**
  * @brief Function used to calculate the time spent on the lsolve function
@@ -548,7 +571,7 @@ int main(int argc, char *argv[])
     char *mtx_dir = argv[1];
     char *b_dir = argv[2];
 
-    double serial_baseline = 27.326126;
+    double serial_baseline;
 
     double *solution1, *solution2, *solution3, *verification_b;
     double su1, su2;
@@ -559,9 +582,9 @@ int main(int argc, char *argv[])
     read_b(b_dir, &solution2);
     read_b(b_dir, &solution3);
     read_b(b_dir, &verification_b);
-    //
-    int r1 = get_time(&lsolve_level_omp, m1, solution1, &t1, verification_b);
+    int r1 = get_time(&lsolve_improve_omp, m1, solution1, &t1, verification_b);
     int r2 = get_time(&lsolve_level_omp, m1, solution2, &t2, verification_b);
+    get_time(&lsolve, m1, solution3, &serial_baseline, verification_b); 
     su1 = get_speedup(serial_baseline, t1);
     su2 = get_speedup(serial_baseline, t2);
     printf("time %f, speed up % f, verification %d\n", t1, su1, r1);
