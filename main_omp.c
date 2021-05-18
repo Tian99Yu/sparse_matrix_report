@@ -410,8 +410,8 @@ int lsolve_level_omp(int n, int *Lp, int *Li, double *Lx, double *x)
         {
             arr[j] = level[index + j];
         }
-        //first sort the node in that level
-        heapSort(arr, cur_size);
+        // //first sort the node in that level
+        // heapSort(arr, cur_size);
 //then process the children
 #pragma omp parallel default(shared)
 #pragma omp for
